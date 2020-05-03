@@ -5,8 +5,9 @@
     <classes>
       <class name="mavenProject.test.SignInPageTest">
         <methods>
+          <include name="aftertest"/>
           <include name="initialization"/>
-          <include name="endSuite"/>
+          <include name="setUpReport"/>
           <include name="signIn"/>
         </methods>
       </class> <!-- mavenProject.test.SignInPageTest -->
