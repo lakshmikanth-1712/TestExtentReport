@@ -22,11 +22,7 @@ import com.aventstack.extentreports.MediaEntityBuilder;
 import com.aventstack.extentreports.Status;
 
 
-import io.appium.java_client.AppiumDriver;
-import io.appium.java_client.MobileElement;
-import io.appium.java_client.android.AndroidDriver;
-import io.appium.java_client.android.AndroidElement;
-import io.appium.java_client.remote.MobileCapabilityType;
+
 import pages.HomePage;
 
 
@@ -44,7 +40,7 @@ public class SignInPageTest extends base{
 	{
 		try {
 		//test = report.startTest("TC001 is executing").assignAuthor("Lakshmi");
-		driver.get("");
+		
 		//TbaseMgr = new TestBaseManager(driver);
 		HomePage hp = new HomePage(driver);
 		

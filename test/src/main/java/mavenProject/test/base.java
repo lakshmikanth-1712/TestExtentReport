@@ -49,7 +49,7 @@ public class base extends extentTest{
 		
 		if(browserName.equals("chrome")){
 			
-			System.setProperty("webdriver.chrome.driver", get_path("drivers") + "/chromedriver");
+			System.setProperty("webdriver.chrome.driver", get_path("Drivers") + "/chromedriver");
 			//System.setProperty("webdriver.chrome.driver", "/Users/luckyshiney/eclipse-workspace/com/src/test/resources/drivers/chromedriver");
 			//System.setProperty("webdriver.chrome.driver", "/Users/luckyshiney⁩/⁨Downloads⁩/chromedriver");
 			driver = new ChromeDriver(); 
