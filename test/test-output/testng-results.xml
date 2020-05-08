@@ -2,24 +2,24 @@
 <testng-results skipped="0" failed="0" ignored="0" total="1" passed="1">
   <reporter-output>
   </reporter-output>
-  <suite name="Default suite" duration-ms="11541" started-at="2020-05-03T23:45:47 IST" finished-at="2020-05-03T23:45:59 IST">
+  <suite name="Default suite" duration-ms="12245" started-at="2020-05-04T11:50:29 IST" finished-at="2020-05-04T11:50:41 IST">
     <groups>
     </groups>
-    <test name="Default test" duration-ms="11541" started-at="2020-05-03T23:45:47 IST" finished-at="2020-05-03T23:45:59 IST">
+    <test name="Default test" duration-ms="12245" started-at="2020-05-04T11:50:29 IST" finished-at="2020-05-04T11:50:41 IST">
       <class name="mavenProject.test.SignInPageTest">
-        <test-method status="PASS" signature="initialization()[pri:0, instance:mavenProject.test.SignInPageTest@ea1a8d5]" name="initialization" is-config="true" duration-ms="7078" started-at="2020-05-03T23:45:47 IST" finished-at="2020-05-03T23:45:54 IST">
+        <test-method status="PASS" signature="initialization()[pri:0, instance:mavenProject.test.SignInPageTest@2bbf4b8b]" name="initialization" is-config="true" duration-ms="7899" started-at="2020-05-04T11:50:29 IST" finished-at="2020-05-04T11:50:37 IST">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- initialization -->
-        <test-method status="PASS" signature="setUpReport()[pri:0, instance:mavenProject.test.SignInPageTest@ea1a8d5]" name="setUpReport" is-config="true" duration-ms="724" started-at="2020-05-03T23:45:54 IST" finished-at="2020-05-03T23:45:55 IST">
+        <test-method status="PASS" signature="setUpReport()[pri:0, instance:mavenProject.test.SignInPageTest@2bbf4b8b]" name="setUpReport" is-config="true" duration-ms="527" started-at="2020-05-04T11:50:37 IST" finished-at="2020-05-04T11:50:38 IST">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- setUpReport -->
-        <test-method status="PASS" signature="signIn()[pri:0, instance:mavenProject.test.SignInPageTest@ea1a8d5]" name="signIn" duration-ms="2570" started-at="2020-05-03T23:45:55 IST" finished-at="2020-05-03T23:45:57 IST">
+        <test-method status="PASS" signature="signIn()[pri:0, instance:mavenProject.test.SignInPageTest@2bbf4b8b]" name="signIn" duration-ms="2343" started-at="2020-05-04T11:50:38 IST" finished-at="2020-05-04T11:50:40 IST">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- signIn -->
-        <test-method status="PASS" signature="aftertest()[pri:0, instance:mavenProject.test.SignInPageTest@ea1a8d5]" name="aftertest" is-config="true" duration-ms="1109" started-at="2020-05-03T23:45:57 IST" finished-at="2020-05-03T23:45:59 IST">
+        <test-method status="PASS" signature="aftertest()[pri:0, instance:mavenProject.test.SignInPageTest@2bbf4b8b]" name="aftertest" is-config="true" duration-ms="1376" started-at="2020-05-04T11:50:40 IST" finished-at="2020-05-04T11:50:41 IST">
           <reporter-output>
           </reporter-output>
         </test-method> <!-- aftertest -->

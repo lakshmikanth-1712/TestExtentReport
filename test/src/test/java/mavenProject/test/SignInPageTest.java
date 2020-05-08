@@ -94,19 +94,7 @@ public class SignInPageTest extends base {
 		
 	}	
 	
-	public String captureScreen() throws IOException
-	{
-		TakesScreenshot screen=(TakesScreenshot)driver;
-		File src=screen.getScreenshotAs(OutputType.FILE);
-		//String dest="./screenshots/"+getcurrentdateandtime()+".png"; ///It Doesn't work
-		///(Only Absolute path works, Not Relative Path...)
-		String dest="/Users/luckyshiney/git/TestExtentReport/test/Screenshots"+getcurrentdateandtime()+".png";
-		File target=new File(dest);
-		// FileUtils.copyFile(src,target); //Works for older version of selenium like "selenium-server-standalone-3.14.0"
-		//For new version of selenium like "selenium-server-standalone-3.141.59" use the below line.
-		FileHandler.copy(src, target);
-		return dest;
-	}
+	
 	
 	/*@AfterTest
 	public void aftertest()

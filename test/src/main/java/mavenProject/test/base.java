@@ -7,8 +7,11 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.io.FileHandler;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
@@ -102,6 +105,20 @@ public class base extends extentTest{
 		// TODO Auto-generated method stub
 		File f = new File(fileName);
 		return f.getAbsolutePath();
+	}
+	
+	public String captureScreen() throws IOException
+	{
+		TakesScreenshot screen=(TakesScreenshot)driver;
+		File src=screen.getScreenshotAs(OutputType.FILE);
+		//String dest="./screenshots/"+getcurrentdateandtime()+".png"; ///It Doesn't work
+		///(Only Absolute path works, Not Relative Path...)
+		String dest="./Screenshots"+getcurrentdateandtime()+".png";
+		File target=new File(dest);
+		// FileUtils.copyFile(src,target); //Works for older version of selenium like "selenium-server-standalone-3.14.0"
+		//For new version of selenium like "selenium-server-standalone-3.141.59" use the below line.
+		FileHandler.copy(src, target);
+		return dest;
 	}
 
 	@AfterTest
