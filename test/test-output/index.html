@@ -135,7 +135,7 @@
         </div> <!-- panel Default_suite -->
         <div panel-name="test-xml-Default_suite" class="panel">
           <div class="main-panel-header rounded-window-top">
-            <span class="header-content">/private/var/folders/8y/n0t460495sxfdvtyll7s6skw0000gn/T/testng-eclipse--1445568903/testng-customsuite.xml</span>
+            <span class="header-content">/private/var/folders/8y/n0t460495sxfdvtyll7s6skw0000gn/T/testng-eclipse--325854322/testng-customsuite.xml</span>
           </div> <!-- main-panel-header rounded-window-top -->
           <div class="main-panel-content rounded-window-bottom">
             <pre>
@@ -144,11 +144,7 @@
 &lt;suite guice-stage=&quot;DEVELOPMENT&quot; name=&quot;Default suite&quot;&gt;
   &lt;test thread-count=&quot;5&quot; verbose=&quot;2&quot; name=&quot;Default test&quot;&gt;
     &lt;classes&gt;
-      &lt;class name=&quot;mavenProject.test.SignInPageTest&quot;&gt;
-        &lt;methods&gt;
-          &lt;include name=&quot;signIn&quot;/&gt;
-        &lt;/methods&gt;
-      &lt;/class&gt; &lt;!-- mavenProject.test.SignInPageTest --&gt;
+      &lt;class name=&quot;mavenProject.test.SignInPageTest&quot;/&gt;
     &lt;/classes&gt;
   &lt;/test&gt; &lt;!-- Default test --&gt;
 &lt;/suite&gt; &lt;!-- Default suite --&gt;
@@ -192,7 +188,7 @@ data.addRows(1);
 data.setCell(0, 0, 0)
 data.setCell(0, 1, 'signIn')
 data.setCell(0, 2, 'mavenProject.test.SignInPageTest')
-data.setCell(0, 3, 2343);
+data.setCell(0, 3, 2050);
 window.suiteTableData['Default_suite']= { tableData: data, tableDiv: 'times-div-Default_suite'}
 return data;
 }
@@ -230,15 +226,19 @@ return data;
               </div> <!-- configuration-test before -->
               <div class="configuration-method before">
                 <span class="method-name">setUpReport</span>
-                <span class="method-start">7964 ms</span>
+                <span class="method-start">6354 ms</span>
               </div> <!-- configuration-method before -->
               <div class="test-method">
                 <span class="method-name">signIn</span>
-                <span class="method-start">8492 ms</span>
+                <span class="method-start">6742 ms</span>
               </div> <!-- test-method -->
+              <div class="configuration-method after">
+                <span class="method-name">checkResult([TestResult name=signIn status=SUCCESS method=SignInPageTest.signIn()[pri:0, instance:mavenProject.t...)</span>
+                <span class="method-start">8797 ms</span>
+              </div> <!-- configuration-method after -->
               <div class="configuration-test after">
                 <span class="method-name">aftertest</span>
-                <span class="method-start">10853 ms</span>
+                <span class="method-start">9168 ms</span>
               </div> <!-- configuration-test after -->
           </div> <!-- main-panel-content rounded-window-bottom -->
         </div> <!-- panel -->

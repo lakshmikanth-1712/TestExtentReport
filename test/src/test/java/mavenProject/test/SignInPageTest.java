@@ -84,8 +84,8 @@ public class SignInPageTest extends base {
 			driver.manage().window().maximize();
 			try
 			{
-				test.log(Status.INFO, "Google Page opened "+test.addScreenCaptureFromPath(captureScreen()));
-				test.log(Status.PASS, "Passed test "+test.addScreenCaptureFromPath(captureScreen()));
+//				test.log(Status.INFO, "Google Page opened "+test.addScreenCaptureFromPath(captureScreen()));
+//				test.log(Status.PASS, "Passed test "+test.addScreenCaptureFromPath(captureScreen()));
 			}
 			catch (Exception e)
 			{

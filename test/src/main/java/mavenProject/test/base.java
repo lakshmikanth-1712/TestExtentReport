@@ -4,26 +4,27 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.io.FileUtils;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.io.FileHandler;
 import org.openqa.selenium.remote.RemoteWebDriver;
+import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterSuite;
 import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.BeforeTest;
 
-import com.aventstack.extentreports.ExtentReports;
-import com.aventstack.extentreports.ExtentTest;
-import com.aventstack.extentreports.reporter.ExtentHtmlReporter;
-import com.aventstack.extentreports.reporter.configuration.Theme;
+import com.aventstack.extentreports.MediaEntityBuilder;
+import com.aventstack.extentreports.Status;
 
 import extentReport.extentTest;
 
@@ -34,11 +35,6 @@ public class base extends extentTest{
 	 
 	
 	public static final String DATE_FORMAT = "yyyy-MM-dd";
-	
-	
-	
-	
-	
 	
 	
 	/*@BeforeTest
@@ -78,6 +74,8 @@ public class base extends extentTest{
 		if(browserName.equals("chrome")){
 			
 			System.setProperty("webdriver.chrome.driver", get_path("Drivers") + "/chromedriver");
+			//Timed out receiving message from renderer: 0.100 - info will not print in console if u put below line of code
+			System.setProperty(ChromeDriverService.CHROME_DRIVER_SILENT_OUTPUT_PROPERTY, "true");
 			//System.setProperty("webdriver.chrome.driver", "/Users/luckyshiney/eclipse-workspace/com/src/test/resources/drivers/chromedriver");
 			//System.setProperty("webdriver.chrome.driver", "/Users/luckyshiney⁩/⁨Downloads⁩/chromedriver");
 			driver = new ChromeDriver(); 
@@ -100,6 +98,32 @@ public class base extends extentTest{
 		
 	}
 
+	@AfterMethod
+	public void checkResult(ITestResult result) throws IOException {
+		try {
+
+			if (result.getStatus() == ITestResult.FAILURE) {
+
+				test.fail(result.getThrowable());
+				// test.fail("Screenshot below: " +
+				// test.addScreenCaptureFromPath(captureScreen(result.getMethod().getMethodName())));
+				test.fail("Failure Screenshot",
+						MediaEntityBuilder.createScreenCaptureFromPath(captureScreen(result.getName())).build());
+			} else if (result.getStatus() == ITestResult.SKIP) {
+				test.log(Status.SKIP, "Test Case :" + result.getThrowable() + " is SKIPPED");
+				test.skip("Screenshot below: "
+						+ test.addScreenCaptureFromPath(captureScreen(result.getName())));
+			} else if (result.getStatus() == ITestResult.SUCCESS) {
+				test.log(Status.PASS, "Test Case :" + result.getName() + " is PASSED ");
+				test.pass("Passed Screenshot",
+						MediaEntityBuilder.createScreenCaptureFromPath(captureScreen(result.getName())).build());
+			}
+		} catch (TimeoutException e) {
+			test.log(Status.FAIL, "TimeOutException");
+			test.fail("Failure Screenshot",
+					MediaEntityBuilder.createScreenCaptureFromPath(captureScreen(result.getName())).build());
+		}
+	}
 
 	public static String get_path(String fileName) {
 		// TODO Auto-generated method stub
@@ -107,17 +131,23 @@ public class base extends extentTest{
 		return f.getAbsolutePath();
 	}
 	
-	public String captureScreen() throws IOException
+	public String captureScreen(String screenshotName) throws IOException
 	{
+	
+		//SimpleDateFormat sdf = new SimpleDateFormat("M/d/yyyy hh:mm:ss");
+		Date d = new Date();
+		//sdf.format(d);
 		TakesScreenshot screen=(TakesScreenshot)driver;
 		File src=screen.getScreenshotAs(OutputType.FILE);
 		//String dest="./screenshots/"+getcurrentdateandtime()+".png"; ///It Doesn't work
 		///(Only Absolute path works, Not Relative Path...)
-		String dest="./Screenshots"+getcurrentdateandtime()+".png";
+		String dest = System.getProperty("user.dir") + "/Screenshots/"
+				+ d.toString().replace(":", "_").replace(" ", "_") + screenshotName + ".png";
+		//String dest="./Screenshots"+getcurrentdateandtime()+".png";
 		File target=new File(dest);
-		// FileUtils.copyFile(src,target); //Works for older version of selenium like "selenium-server-standalone-3.14.0"
+		 FileUtils.copyFile(src,target); //Works for older version of selenium like "selenium-server-standalone-3.14.0"
 		//For new version of selenium like "selenium-server-standalone-3.141.59" use the below line.
-		FileHandler.copy(src, target);
+		//FileHandler.copy(src, target);
 		return dest;
 	}
 
