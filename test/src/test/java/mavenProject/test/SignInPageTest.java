@@ -2,6 +2,8 @@ package mavenProject.test;
 
 import org.testng.annotations.Test;
 
+import com.aventstack.extentreports.Status;
+
 
 
 public class SignInPageTest extends base {
@@ -49,6 +51,7 @@ public class SignInPageTest extends base {
 		    test=extent.createTest("testcase");
 			driver.get("https://www.google.com/");
 			driver.manage().window().maximize();
+			test.info("Test case Success");
 			try
 			{
 //				test.log(Status.INFO, "Google Page opened "+test.addScreenCaptureFromPath(captureScreen()));
