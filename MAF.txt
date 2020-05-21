@@ -1,1036 +1,1027 @@
-{\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf600
-{\fonttbl\f0\froman\fcharset0 Times-Roman;}
-{\colortbl;\red255\green255\blue255;\red0\green0\blue0;\red0\green0\blue233;}
-{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;\cssrgb\c0\c0\c93333;}
-\paperw11900\paperh16840\margl1440\margr1440\vieww10800\viewh8400\viewkind0
-\deftab720
-\pard\pardeftab720\sl280\partightenfactor0
+package com.marriott.automation.superhelper;
 
-\f0\fs24 \cf2 \expnd0\expndtw0\kerning0
-\outl0\strokewidth0 \strokec2 package com.marriott.automation.superhelper;\
-\
-import com.aventstack.extentreports.MediaEntityBuilder;\
-import com.github.javafaker.Faker;\
-import com.marriott.automation.pages.Book.types.MarshaCode;\
-import com.marriott.automation.superhelper.elements.widget.CheckBox;\
-import com.marriott.automation.superhelper.enums.Execution;\
-import com.marriott.automation.superhelper.enums.RewardsMember;\
-import com.marriott.automation.superhelper.exceptions.*;\
-import com.marriott.automation.superhelper.listeners.*;\
-import com.marriott.automation.superhelper.reporting.EmailableReporter;\
-import com.marriott.automation.superhelper.reporting.JSONReporter;\
-import com.marriott.automation.superhelper.reporting.MarriottReportUtils;\
-import io.github.bonigarcia.wdm.WebDriverManager;\
-import org.apache.commons.io.FileUtils;\
-import org.apache.log4j.Logger;\
-import org.openqa.selenium.Dimension;\
-import org.openqa.selenium.NoSuchElementException;\
-import org.openqa.selenium.Point;\
-import org.openqa.selenium.TimeoutException;\
-import org.openqa.selenium.*;\
-import org.openqa.selenium.chrome.ChromeOptions;\
-import org.openqa.selenium.firefox.FirefoxDriver;\
-import org.openqa.selenium.firefox.FirefoxOptions;\
-import org.openqa.selenium.firefox.FirefoxProfile;\
-import org.openqa.selenium.ie.InternetExplorerDriver;\
-import org.openqa.selenium.ie.InternetExplorerOptions;\
-import org.openqa.selenium.interactions.Actions;\
-import org.openqa.selenium.remote.CapabilityType;\
-import org.openqa.selenium.support.ui.ExpectedCondition;\
-import org.openqa.selenium.support.ui.ExpectedConditions;\
-import org.openqa.selenium.support.ui.Wait;\
-import org.openqa.selenium.support.ui.WebDriverWait;\
-import org.testng.Reporter;\
-import org.testng.annotations.Optional;\
-import org.testng.annotations.*;\
-\
-import javax.imageio.ImageIO;\
-import java.awt.*;\
-import java.awt.image.BufferedImage;\
-import java.io.*;\
-import java.lang.reflect.Method;\
-import java.text.SimpleDateFormat;\
-import java.time.LocalDate;\
-import java.time.Month;\
-import java.time.ZoneOffset;\
-import java.time.format.DateTimeFormatter;\
-import java.time.temporal.ChronoUnit;\
-import java.util.List;\
-import java.util.*;\
-import java.util.concurrent.TimeUnit;\
-import java.util.logging.Level;\
-import java.util.stream.Collectors;\
-\
-import static com.marriott.automation.superhelper.MyThreadLocal.*;\
-import static org.testng.AssertJUnit.assertTrue;\
-\
-/**\
-\'a0* MAF (Marriott Automation Framework) contains browser and thread setup code\
-\'a0* and reusable functions that are used throughout pages and scripts.\
-\'a0*\
-\'a0* @author ceccl047\
-\'a0*/\
-@Listeners(\{MarriottCancelListener.class, MarriottConfigurationListener.class,\
-\'a0 \'a0 \'a0 \'a0 MarriottMethodInterceptor.class, MarriottSuiteListener.class, MarriottTestListener.class,\
-\'a0 \'a0 \'a0 \'a0 EmailableReporter.class, JSONReporter.class\})\
-public class MAF \{\
-\
-\'a0 \'a0 public static final boolean CLOSE_BROWSER = Boolean.parseBoolean(ResourceBundleUtils.getProperty("close_browser"));\
-\'a0 \'a0 public static final String AKAMAI = "bWFycmlvdHQ6JTIxJTI0a0QyYkY3JTI4ZjU3JTIzWQ==";\
-\'a0 \'a0 private static final String INTERNET_EXPLORER = ResourceBundleUtils.getProperty("internet_explorer");\
-\'a0 \'a0 private static final String CHROME = ResourceBundleUtils.getProperty("chrome");\
-\'a0 \'a0 private static final String FIREFOX = ResourceBundleUtils.getProperty("firefox");\
-\'a0 \'a0 private static final String PRODUCTION_SERVER = ResourceBundleUtils.getProperty("production_server");\
-\'a0 \'a0 private static final String DEFAULT_BROWSER = "Chrome";\
-\'a0 \'a0 public static boolean OVERWRITE_FILES = Boolean.valueOf(ResourceBundleUtils.getProperty("overwrite_files"));\
-\'a0 \'a0 public static boolean screenshotsWanted = Boolean.parseBoolean(ResourceBundleUtils.getProperty("take_screenshots"));\
-\'a0 \'a0 public static String EXECUTION_FOLDER = "";\
-\'a0 \'a0 public static String screenshotLocation;\
-\'a0 \'a0 public static Properties prop;\
-\'a0 \'a0 protected static String m_environment;\
-\'a0 \'a0 private static Logger LOG = Logger.getLogger(MAF.class);\
-\'a0 \'a0 private static Logger L = Logger.getLogger(MAF.class);\
-\'a0 \'a0 private static Map<String, String> globalURLs = new HashMap<>();\
-\'a0 \'a0 private static Map<String, String> globalLocales = new HashMap<>();\
-\'a0 \'a0 private static String propFileName = "src/com/marriott/automation/superhelper/data/userDetails/User-Credentials.properties";\
-\'a0 \'a0 private static FileInputStream inputStream = null;\
-\'a0 \'a0 private static boolean isGroupsTest;\
-\'a0 \'a0 public static boolean multiRate = Boolean.parseBoolean(ResourceBundleUtils.getProperty("test_environment_multirate"));\
-\'a0 \'a0 protected static HashMap<String, Boolean> tracker = new HashMap<>();\
-\
-\'a0 \'a0 static \{\
-\'a0 \'a0 \'a0 \'a0 Calendar cal = Calendar.getInstance();\
-\'a0 \'a0 \'a0 \'a0 String month = new SimpleDateFormat("MMM").format(cal.getTime());\
-\'a0 \'a0 \'a0 \'a0 int year = cal.get(Calendar.YEAR);\
-\'a0 \'a0 \'a0 \'a0 int date = cal.get(Calendar.DATE);\
-\'a0 \'a0 \'a0 \'a0 int hour = cal.get(Calendar.HOUR_OF_DAY);\
-\'a0 \'a0 \'a0 \'a0 int minute = cal.get(Calendar.MINUTE);\
-\'a0 \'a0 \'a0 \'a0 int second = cal.get(Calendar.SECOND);\
-\'a0 \'a0 \'a0 \'a0 if (!OVERWRITE_FILES) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 EXECUTION_FOLDER = month + "_" + String.format("%02d", date) + "_" + year + File.separator\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 + String.format("%02d", hour) + "-" + String.format("%02d", minute) + "-"\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 + String.format("%02d", second) + File.separator;\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 screenshotLocation = "test-output" + File.separator + EXECUTION_FOLDER + File.separator + "screenshots" + File.separator;\
-\'a0 \'a0 \'a0 \'a0 loadPropertiesFile();\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 private static void loadPropertiesFile()\{\
-\'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 inputStream = new FileInputStream(propFileName);\
-\'a0 \'a0 \'a0 \'a0 \} catch (FileNotFoundException e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 e.printStackTrace();\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 prop = new Properties();\
-\'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 prop.load(inputStream);\
-\'a0 \'a0 \'a0 \'a0 \} catch (IOException e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 e.printStackTrace();\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 protected final XLSXParser parse = new XLSXParser();\
-\'a0 \'a0 //public RewardsMember ucMember;\
-\
-\'a0 \'a0 protected boolean dollarZeroFlag = true; // Back end -$0 flag setting for CVV field display on Guestinfo and Review details Page.\
-\'a0 \'a0 protected Faker faker = new Faker();\
-\
-\'a0 \'a0 public static RewardsMember ucMember()\{\
-\'a0 \'a0 \'a0 \'a0 return MyThreadLocal.getUcMember();\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 private static void addVerificationFailure(Throwable e) \{\
-\'a0 \'a0 \'a0 \'a0 List<Throwable> verificationFailures = getVerificationFailures();\
-\'a0 \'a0 \'a0 \'a0 getVerificationMap().put(Reporter.getCurrentTestResult(), verificationFailures);\
-\'a0 \'a0 \'a0 \'a0 verificationFailures.add(e);\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public static void captureFullScreen() \{\
-\'a0 \'a0 \'a0 \'a0 if (getDriverType().equalsIgnoreCase("chrome")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 setScreenNum(getScreenNum() + 1);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 BufferedImage screenshot = ImageIO.read(new ByteArrayInputStream(((ChromeDriverEx) getDriver().getWrappedDriver()).getFullScreenshotAs(OutputType.BYTES)));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 ImageIO.write(screenshot, "PNG", new File(getFile() + File.separator\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 + File.separator + String.format("%010d", getScreenNum()) + ".png"));\
-\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch (Exception e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 e.printStackTrace();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 private static void captureScreen() \{\
-\'a0 \'a0 \'a0 \'a0 setScreenNum(getScreenNum() + 1);\
-\'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 BufferedImage screenshot = ImageIO.read(new ByteArrayInputStream(getDriver().getScreenshotAs(OutputType.BYTES)));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 ImageIO.write(screenshot, "PNG", new File(getFile() + File.separator\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 + File.separator + String.format("%010d", getScreenNum()) + ".png"));\
-\
-\'a0 \'a0 \'a0 \'a0 \} catch (Exception ignored) \{\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 protected static void checkForErrors() \{\
-\'a0 \'a0 \'a0 \'a0 String currentURL = MyThreadLocal.getDriver().getCurrentUrl();\
-\'a0 \'a0 \'a0 \'a0 if (currentURL.contains("invalidPath")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 fail(new InvalidPathException());\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 if (currentURL.contains("systemMaintenance")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 fail(new SystemMaintenanceException());\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 if (currentURL.contains("/error.mi")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 fail(new GeneralErrorException());\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 if (currentURL.contains("800Page")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 fail(new _800PageException());\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 String pageSource = MyThreadLocal.getDriver().getPageSource();\
-\'a0 \'a0 \'a0 \'a0 if (pageSource.contains("504 Gateway Time-out") || pageSource.contains("502 Bad Gateway") || pageSource.contains("The server didn't respond in time")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 fail(new GatewayTimeoutException());\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 if (pageSource.contains("503 Unavailable") || pageSource.contains("503 Service Unavailable") ||\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 pageSource.contains("503 unavailable") || pageSource.contains("503 service unavailable")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 fail(new _503Exception());\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 if (pageSource.contains("Error 500")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 fail("JSP Error 500 seen on the page - " + MyThreadLocal.getDriver().getCurrentUrl(), Execution.CONTINUE);\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 /**\
-\'a0 \'a0 \'a0* <h2>Reports a failure of a verification to the test that will show as red\
-\'a0 \'a0 \'a0* in the report</h2>\
-\'a0 \'a0 \'a0*\
-\'a0 \'a0 \'a0* @param message \'a0 \'a0 \'a0 \'a0 \'a0 text to report as a failure in the output report\
-\'a0 \'a0 \'a0* @param continueExecution if <code>true</code>, continues test script execution.\
-\'a0 \'a0 \'a0* \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0Otherwise, throws an AssertionError and stops test execution.\
-\'a0 \'a0 \'a0*/\
-\'a0 \'a0 public static void fail(String message, Execution continueExecution, boolean override) \{\
-\'a0 \'a0 \'a0 \'a0 if (continueExecution == Execution.CONTINUE) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 assertTrue(false);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch (Throwable e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 addVerificationFailure(e);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 takeScreenshot(true);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 Reporter.log("<div class=\\"row fail\\">" + message + "</div>");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 String f = (getFile() + File.separator + String.format("%010d", getScreenNum()) + ".png").replaceFirst("test-output/", "");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 MarriottTestListener.test.get().warning(message, MediaEntityBuilder.createScreenCaptureFromPath(f).build());\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch (IOException ignored) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 throw new AssertionError(message);\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public static void fail(String message, Execution continueExecution) \{\
-\'a0 \'a0 \'a0 \'a0 fail(message, continueExecution, true);\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public static void fail(AssertionError throwable) \{\
-\'a0 \'a0 \'a0 \'a0 throw throwable;\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public static void fail(AssertionError throwable, Execution execution) \{\
-\'a0 \'a0 \'a0 \'a0 if (execution == Execution.CONTINUE) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 addVerificationFailure(throwable);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 Reporter.log("<div class=\\"row fail\\">" + throwable.getMessage() + "</div>");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 MarriottTestListener.test.get().warning(throwable.getMessage());\
-\'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 throw throwable;\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public static void fail(String message) \{\
-\'a0 \'a0 \'a0 \'a0 fail(message, Execution.CONTINUE);\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public static void failNoScreenshot(String message, Execution continueExecution) \{\
-\'a0 \'a0 \'a0 \'a0 fail(message, continueExecution, false);\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 protected static String getRandomCityDestination() \{\
-\'a0 \'a0 \'a0 \'a0 String locale = getLanguage();\
-\'a0 \'a0 \'a0 \'a0 if (locale.equals("PT") || locale.equals("BR")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 locale = "PTBR";\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 List<String> cities;\
-\'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 cities = FileUtils.readLines(new File("src/com/marriott/automation/superhelper/data/cities_" + locale + ".txt"), "utf-8");\
-\'a0 \'a0 \'a0 \'a0 \} catch (IOException e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 cities = FileUtils.readLines(new File("src/com/marriott/automation/superhelper/data/cities_US.txt"), "utf-8");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch (IOException e1) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 return null;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 return cities.get(new Random().nextInt(cities.size()));\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 protected static String getRandomMarshaCode() \{\
-\'a0 \'a0 \'a0 \'a0 return getRandomMarshaCode(MarshaCode.MR);\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 protected static String getRandomMarshaCode(MarshaCode marshacode) \{\
-\'a0 \'a0 \'a0 \'a0 List<String> marsha;\
-\'a0 \'a0 \'a0 \'a0 String filename;\
-\'a0 \'a0 \'a0 \'a0 switch (marshacode) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 case MR:\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 filename = "marshaCodes.txt";\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 break;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 case ERS:\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 filename = "marshaCodesERS.txt";\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 break;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 case RITZ_EDITION:\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 filename = "marshaCodesRitzEdition.txt";\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 break;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 case SNA:\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 filename = "marshaCodesSNA.txt";\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 break;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 case ERS_MIGRATED:\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 filename = "marshaCodesERSMigrated.txt";\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 break;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 case HWS_T2:\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 filename = "hws/marshaCodesHWS.txt";\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 break;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 case HWS_T3:\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 filename = "hws/marshaCodesT3.txt";\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 break;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 default:\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 filename = "marshaCodes.txt";\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 break;\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 marsha = FileUtils.readLines(new File("src/com/marriott/automation/superhelper/data/" + filename), "utf-8");\
-\'a0 \'a0 \'a0 \'a0 \} catch (IOException e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 return null;\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 return marsha.get(new Random().nextInt(marsha.size()));\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 private static List<Throwable> getVerificationFailures() \{\
-\'a0 \'a0 \'a0 \'a0 List<Throwable> verificationFailures = getVerificationMap().get(Reporter.getCurrentTestResult());\
-\'a0 \'a0 \'a0 \'a0 return verificationFailures == null ? new ArrayList<>() : verificationFailures;\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 /**\
-\'a0 \'a0 \'a0* <h2>Loads a relative URL based on the base URL for that test session</h2>\
-\'a0 \'a0 \'a0* <ul>\
-\'a0 \'a0 \'a0* <li>Loads relative URL (e.g. \{testEnvironment\}/default.mi - loads Mcom\
-\'a0 \'a0 \'a0* home page)</li>\
-\'a0 \'a0 \'a0* <li>Waits for next page to load completely</li>\
-\'a0 \'a0 \'a0* <li>Takes a screenshot, if flag is set</li>\
-\'a0 \'a0 \'a0* </ul>\
-\'a0 \'a0 \'a0*\
-\'a0 \'a0 \'a0* @param target_URL relative URL of the page to be loaded\
-\'a0 \'a0 \'a0*/\
-\'a0 \'a0 public static void loadURL(String target_URL) \{\
-\'a0 \'a0 \'a0 \'a0 if (!target_URL.startsWith("/")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 target_URL = "/" + target_URL;\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 if (!getDriver().getCurrentUrl().equals(getURL() + target_URL)) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 getDriver().get(getURL() + target_URL);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch (TimeoutException te) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 getDriver().navigate().refresh();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch (TimeoutException te1) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 fail(new com.marriott.automation.superhelper.exceptions.TimeoutException());\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 /**\
-\'a0 \'a0 \'a0* <h2>Reports a successful verification to the test that will show as green\
-\'a0 \'a0 \'a0* in the report</h2>\
-\'a0 \'a0 \'a0*\
-\'a0 \'a0 \'a0* @param message text to report as a success in the output report\
-\'a0 \'a0 \'a0*/\
-\'a0 \'a0 public static void pass(String message) \{\
-\'a0 \'a0 \'a0 \'a0 Reporter.log("<div class=\\"row pass\\">" + message\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 + "</div>");\
-\'a0 \'a0 \'a0 \'a0 MarriottTestListener.test.get().pass(message);\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 /**\
-\'a0 \'a0 \'a0* <h2>Reports a message in the report</h2>\
-\'a0 \'a0 \'a0*\
-\'a0 \'a0 \'a0* @param message text to report in the output report\
-\'a0 \'a0 \'a0*/\
-\'a0 \'a0 public static void report(String message) \{\
-\'a0 \'a0 \'a0 \'a0 Reporter.log("<div class=\\"row\\">" + message + "</div>");\
-\'a0 \'a0 \'a0 \'a0 MarriottTestListener.test.get().info(message);\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public static void defect(String defectSummary, String defectID) \{\
-\'a0 \'a0 \'a0 \'a0 report("<a target=\\"_new\\" href=\\"{\field{\*\fldinst{HYPERLINK "https://atlassian.marriott.com/browse/"}}{\fldrslt \cf3 \ul \ulc3 \strokec3 https://atlassian.marriott.com/browse/}}" + defectID + "\\">" + defectSummary + ": " + defectID);\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public static void selectDate(int daysFromToday) \{\
-\'a0 \'a0 \'a0 \'a0 WebElement mCurrentDateInput = getDriver().switchTo().activeElement();\
-\'a0 \'a0 \'a0 \'a0 boolean oldCalendarPage = getDriver().getCurrentUrl().contains("meeting") || getDriver().getCurrentUrl().contains("contact") || getDriver().getCurrentUrl().contains("claimForm");\
-\'a0 \'a0 \'a0 \'a0 boolean isNewCalendar = !oldCalendarPage && getDriver().findElements(By.cssSelector(".js-date-pick-container .new-container")).stream().filter(e -> e.isDisplayed()).collect(Collectors.toList()).size() > 0;\
-\'a0 \'a0 \'a0 \'a0 if(isNewCalendar)\{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try\{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 boolean isCheckout = mCurrentDateInput.getAttribute("id").matches(".*?[tT]oDate.*?") ||\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 mCurrentDateInput.getAttribute("id").equalsIgnoreCase("gi-checkout-date");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (!isCheckout) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 WebElement btnPreviousMonth = getDriver().findElement(By.cssSelector("th[class*='t-prev']"));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 boolean btnPreviousMonthIsEnabled = btnPreviousMonth.getAttribute("class").contains("disabled");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 while (!btnPreviousMonthIsEnabled) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 btnPreviousMonth.click();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 btnPreviousMonth = getDriver().findElement(By.cssSelector("th[class*='t-prev']"));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 btnPreviousMonthIsEnabled = btnPreviousMonth.getAttribute("class").contains("disabled");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 int numClicks;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 LocalDate now = LocalDate.now();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 LocalDate wanted = LocalDate.now().plusDays(daysFromToday);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 Object offsetHours1 = getDriver().executeScript("return (new Date(arguments[0], arguments[1], " +\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 "arguments[2], arguments[3], arguments[4], arguments[5], arguments[6])).getTimezoneOffset()/60", wanted.getYear(),\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 wanted.getMonthValue() - 1, wanted.getDayOfMonth(), 0, 0, 0, 0);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 double offsetHours;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (offsetHours1 instanceof Long) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 offsetHours = ((Long) offsetHours1).doubleValue();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 offsetHours = (double) offsetHours1;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 int partOne = Math.abs((int) offsetHours);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 double partTwo = offsetHours % 1;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 String offset = String.format("%s%02d:%s", offsetHours > 0 ? "-" : "+", partOne, (partTwo == 0) ? "00" : "30");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 String milliseconds = wanted.atStartOfDay().toEpochSecond(ZoneOffset.of(offset)) + "000";\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (wanted.getYear() == (now.getYear() + 1)) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 numClicks = (wanted.getMonthValue() + 12) - now.getMonthValue();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 numClicks = wanted.getMonthValue() - now.getMonthValue();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (isCheckout) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 LocalDate checkInWanted = LocalDate.now().plusDays(getCheckInDays());\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (checkInWanted.getDayOfMonth() == checkInWanted.lengthOfMonth()) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 numClicks = 0;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 numClicks = (int) ChronoUnit.MONTHS.between(checkInWanted, wanted);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 setCheckInDays(0);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 setCheckInDays(daysFromToday);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 WebElement btnNextMonth;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 for (int i = 0; i < numClicks; i++) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 btnNextMonth = getDriver().findElement(By.cssSelector("th[class='t-arrow t-next']"));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 btnNextMonth.click();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 WebElement mDate;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 mDate = getDriver().findElement(By.cssSelector("td[data-t-date='" + milliseconds + "']"));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 new WebDriverWait(getDriver(), 10).until(ExpectedConditions.visibilityOf(mDate));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 mDate.click();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 String selectedDate = wanted.format(DateTimeFormatter.ofPattern("EE, MMM d, yyyy"));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 report("Set " + (!isCheckout ? "from" : "to") + " date to " + selectedDate);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if(!isCheckout)\{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 getSearchDetails().setCheckInDate(selectedDate);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}else\{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 getSearchDetails().setCheckOutDate(selectedDate);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch (Exception e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 System.out.println(e.getMessage());\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch(Exception e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 fail("Issue when selecting " + (getDriver().switchTo().activeElement().getAttribute("id").matches(".*?[tT]oDate.*?") ? "check-out" : "check-in") + " date", Execution.CONTINUE);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 boolean isCheckout = mCurrentDateInput.getAttribute("id").matches(".*?[tT]oDate.*?") ||\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 mCurrentDateInput.getAttribute("id").equalsIgnoreCase("gi-checkout-date");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (!isCheckout) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 WebElement btnPreviousMonth = getDriver().findElement(By.cssSelector("div.picker--opened div.picker__nav--prev"));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 boolean btnPreviousMonthIsEnabled = btnPreviousMonth.getAttribute("class").contains("disabled");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 while (!btnPreviousMonthIsEnabled) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 btnPreviousMonth.click();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 btnPreviousMonth = getDriver().findElement(By.cssSelector("div.picker--opened div.picker__nav--prev"));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 btnPreviousMonthIsEnabled = btnPreviousMonth.getAttribute("class").contains("disabled");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 int numClicks;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 LocalDate now = LocalDate.now();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 LocalDate wanted = LocalDate.now().plusDays(daysFromToday);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 Object offsetHours1 = getDriver().executeScript("return (new Date(arguments[0], arguments[1], " +\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 "arguments[2], arguments[3], arguments[4], arguments[5], arguments[6])).getTimezoneOffset()/60", wanted.getYear(),\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 wanted.getMonthValue() - 1, wanted.getDayOfMonth(), 0, 0, 0, 0);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 double offsetHours;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (offsetHours1 instanceof Long) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 offsetHours = ((Long) offsetHours1).doubleValue();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 offsetHours = (double) offsetHours1;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 int partOne = Math.abs((int) offsetHours);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 double partTwo = offsetHours % 1;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 String offset = String.format("%s%02d:%s", offsetHours > 0 ? "-" : "+", partOne, (partTwo == 0) ? "00" : "30");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 String milliseconds = wanted.atStartOfDay().toEpochSecond(ZoneOffset.of(offset)) + "000";\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (wanted.getYear() == (now.getYear() + 1)) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 numClicks = (wanted.getMonthValue() + 12) - now.getMonthValue();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 numClicks = wanted.getMonthValue() - now.getMonthValue();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (isCheckout) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 LocalDate checkInWanted = LocalDate.now().plusDays(getCheckInDays());\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (checkInWanted.getDayOfMonth() == checkInWanted.lengthOfMonth()) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 numClicks = 0;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} else \{\
-// \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0numClicks = (int) ChronoUnit.MONTHS.between(checkInWanted, wanted);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 numClicks = wanted.getMonthValue() - checkInWanted.getMonthValue();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 setCheckInDays(0);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 setCheckInDays(daysFromToday);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 WebElement btnNextMonth;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (!isCheckout && getDriver().getCurrentUrl().contains("meeting-event-hotels/meeting-planning.mi")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 btnNextMonth = getDriver().findElement(By.cssSelector("div.picker--opened div.picker__nav--next"));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 btnNextMonth.click();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 for (int i = 0; i < numClicks; i++) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (!isGroupsTest) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 btnNextMonth = getDriver().findElement(By.cssSelector("div.picker--opened div.picker__nav--next"));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 btnNextMonth = getDriver().findElement(By.cssSelector("div.picker__nav--next"));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 btnNextMonth.click();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 WebElement mDate;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (!isGroupsTest) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 mDate = getDriver().findElement(By.cssSelector("div.picker--opened div[data-pick='" + milliseconds + "']"));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 mDate = getDriver().findElement(By.cssSelector("div[data-pick='" + milliseconds + "']"));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 new WebDriverWait(getDriver(), 10).until(ExpectedConditions.visibilityOf(mDate));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 mDate.click();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 String selectedDate = wanted.format(DateTimeFormatter.ofPattern("EE, MMM d, yyyy"));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 report("Set " + (!isCheckout ? "from" : "to") + " date to " + selectedDate);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if(!isCheckout)\{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 getSearchDetails().setCheckInDate(selectedDate);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}else\{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 getSearchDetails().setCheckOutDate(selectedDate);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch(Exception e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 System.out.println(e.getMessage());\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch(Exception e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 fail("Issue when selecting " + (getDriver().switchTo().activeElement().getAttribute("id").matches(".*?[tT]oDate.*?") ? "check-out" : "check-in") + " date", Execution.CONTINUE);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public static void selectDate(int daysFromToday, int numberOfNights) \{\
-\'a0 \'a0 \'a0 \'a0 selectDate(daysFromToday);\
-\'a0 \'a0 \'a0 \'a0 selectDate(daysFromToday + numberOfNights);\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public static void takeScreenshot() \{\
-\'a0 \'a0 \'a0 \'a0 if (screenshotsWanted) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 captureScreen();\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 /**\
-\'a0 \'a0 \'a0* <h2>Takes a screenshot of the current driver's screen</h2>\
-\'a0 \'a0 \'a0*/\
-\'a0 \'a0 public static void takeScreenshot(boolean override) \{\
-\'a0 \'a0 \'a0 \'a0 if (override) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 captureScreen();\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public static void waitUntilElementIsVisible(final WebElement element) \{\
-\'a0 \'a0 \'a0 \'a0 ExpectedCondition<Boolean> expectation = _driver -> element.isDisplayed();\
-\'a0 \'a0 \'a0 \'a0 Wait<WebDriver> wait = new WebDriverWait(getDriver(), 10);\
-\'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 wait.until(webDriver -> expectation);\
-\'a0 \'a0 \'a0 \'a0 \} catch (Throwable ignored) \{\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 /**\
-\'a0 \'a0 \'a0* <h2>Reports a warning message that will show as yellow in the report</h2>\
-\'a0 \'a0 \'a0*\
-\'a0 \'a0 \'a0* @param message text to report as a warning in the output report\
-\'a0 \'a0 \'a0*/\
-\'a0 \'a0 public static void warning(String message) \{\
-\'a0 \'a0 \'a0 \'a0 Reporter.log("<div class=\\"row skip\\">" + message + "</div>");\
-\'a0 \'a0 \'a0 \'a0 takeScreenshot(true);\
-\'a0 \'a0 \'a0 \'a0 String f = (getFile() + File.separator + String.format("%010d", getScreenNum()) + ".png").replaceFirst("test-output/", "");\
-\'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 MarriottTestListener.test.get().warning(message, MediaEntityBuilder.createScreenCaptureFromPath(f).build());\
-\'a0 \'a0 \'a0 \'a0 \} catch (IOException ignored) \{\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public void alertAccept() \{\
-\'a0 \'a0 \'a0 \'a0 Alert alert = getDriver().switchTo().alert();\
-\'a0 \'a0 \'a0 \'a0 alert.accept();\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 @Parameters(\{"environment"\})\
-\'a0 \'a0 @BeforeSuite(alwaysRun = true)\
-\'a0 \'a0 public void beforeSuite(@Optional String environment) \{\
-\'a0 \'a0 \'a0 \'a0 if (environment != null) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 m_environment = (environment.equalsIgnoreCase("production") ? "marriott" : environment);\
-\'a0 \'a0 \'a0 \'a0 \} else if (System.getProperty("environment") != null) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 m_environment = System.getProperty("environment");\
-\'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 m_environment = ResourceBundleUtils.getProperty("test_environment");\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 MarriottReportUtils.environmentVariables.put("Environment", m_environment);\
-\'a0 \'a0 \'a0 \'a0 if(m_environment.equalsIgnoreCase("marriott")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 propFileName = "src/com/marriott/automation/superhelper/data/userDetails/Prod-User-Credentials.properties";\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 loadPropertiesFile();\
-\'a0 \'a0 \'a0 \'a0 \}\
-\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 /**\
-\'a0 \'a0 \'a0* <h2>Checks to see if the chat pop up is blocking interaction with\
-\'a0 \'a0 \'a0* elements on the page</h2>\
-\'a0 \'a0 \'a0* <ul>\
-\'a0 \'a0 \'a0* <li>Reports if the chat pop up is displayed</li>\
-\'a0 \'a0 \'a0* <li>Removes chat pop up</li>\
-\'a0 \'a0 \'a0* </ul>\
-\'a0 \'a0 \'a0*/\
-\'a0 \'a0 private void checkForChatPopup() \{\
-\'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 getDriver().executeScript("document.querySelector('#salesforce_code_insert').remove();");\
-\'a0 \'a0 \'a0 \'a0 \} catch (Exception e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 L.warn("Error checking for chat popup", e);\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 /**\
-\'a0 \'a0 \'a0* <h2>Checks to see if the foresee pop up is blocking interaction with\
-\'a0 \'a0 \'a0* elements on the page</h2>\
-\'a0 \'a0 \'a0* <ul>\
-\'a0 \'a0 \'a0* <li>Reports if the Foresee pop up is displayed</li>\
-\'a0 \'a0 \'a0* <li>Removes Foresee pop up</li>\
-\'a0 \'a0 \'a0* </ul>\
-\'a0 \'a0 \'a0*/\
-\'a0 \'a0 private void checkForseePopup() \{\
-\'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 long overlayLength = (long) getDriver().executeScript("return document.querySelector('#fsrOverlay').length;");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (overlayLength == 1) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 getDriver().findElement(By.cssSelector("div.fsrDeclineButtonContainer")).click();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \} catch (Exception e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 L.warn("Error checking for foresee popup", e);\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 @AfterMethod(alwaysRun = true)\
-\'a0 \'a0 protected void closeBrowser() \{\
-\'a0 \'a0 \'a0 \'a0 if (CLOSE_BROWSER) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 getDriver().close();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 getDriver().quit();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch (Exception exp) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 L.error("Error closing browser");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 clearMethodThread();\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public static String getDateFormat(String dateFormat, int daysFromToday) \{\
-\'a0 \'a0 \'a0 \'a0 Calendar now = Calendar.getInstance();\
-\'a0 \'a0 \'a0 \'a0 now.add(Calendar.DATE, daysFromToday);\
-\'a0 \'a0 \'a0 \'a0 return new SimpleDateFormat(dateFormat).format(now.getTime());\
-\'a0 \'a0 \}\
-\
-\
-\
-\'a0 \'a0 @BeforeMethod(alwaysRun = true)\
-\'a0 \'a0 public void getMember(Method method) \{\
-\'a0 \'a0 \'a0 \'a0 String declaringClass = method.getDeclaringClass().getName();\
-\'a0 \'a0 \'a0 \'a0 declaringClass = declaringClass.replace("com.marriott.automation.scripts.", "");\
-\'a0 \'a0 \'a0 \'a0 String userIdPwd = prop.getProperty(declaringClass + "." + method.getName());\
-\'a0 \'a0 \'a0 \'a0 if (userIdPwd != null) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if(m_environment.equalsIgnoreCase("marriott")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 userIdPwd = new String(Base64.getDecoder().decode(userIdPwd));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 MyThreadLocal.setUcMember(new RewardsMember(userIdPwd.split(",")[0], userIdPwd.split(",")[1]));\
-\'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 String defaultUser = prop.getProperty("DEFAULT_USER");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if(m_environment.equalsIgnoreCase("marriott")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 defaultUser = new String(Base64.getDecoder().decode(defaultUser));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 MyThreadLocal.setUcMember(new RewardsMember(defaultUser.split(",")[0], defaultUser.split(",")[1]));\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 if(Arrays.asList(method.getAnnotation(Test.class).groups()).contains("group"))\{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 isGroupsTest = true;\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 private int getMonthNumber(String inputMonth) \{\
-\'a0 \'a0 \'a0 \'a0 return Month.valueOf(inputMonth.toUpperCase()).getValue();\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 /**\
-\'a0 \'a0 \'a0* Method to get the user credentials from User-Credentials property file.\
-\'a0 \'a0 \'a0*\
-\'a0 \'a0 \'a0* @param userType Key of user to retrieve from User-Credentials file\
-\'a0 \'a0 \'a0* @return RewardsMember of given type\
-\'a0 \'a0 \'a0*/\
-\'a0 \'a0 public RewardsMember getUserDetails(String userType) \{\
-\'a0 \'a0 \'a0 \'a0 String key;\
-\'a0 \'a0 \'a0 \'a0 String[] user;\
-\'a0 \'a0 \'a0 \'a0 RewardsMember member = null;\
-\'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 key = prop.getProperty(userType);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 user = key.split(",");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 for (int i = 0; i < user.length; i++) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 user[i] = user[i].trim();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 member = new RewardsMember(user[0], user[1]);\
-\'a0 \'a0 \'a0 \'a0 \} catch (Exception e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 LOG.debug("Unable to get member details.", e);\
-\'a0 \'a0 \'a0 \'a0 \} finally \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 inputStream.close();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch (IOException e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 LOG.debug("Unable to close file input stream.", e);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 return member;\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public CheckBox getVisibleCheckBox(List<CheckBox> checkBoxes) \{\
-\'a0 \'a0 \'a0 \'a0 for (CheckBox c : checkBoxes) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (c.getLabel().isDisplayed()) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 return c;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 return checkBoxes.get(0);\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 /**\
-\'a0 \'a0 \'a0* <h2>Initializes a browser session by setting the base URL</h2>\
-\'a0 \'a0 \'a0* <ul>\
-\'a0 \'a0 \'a0* <li>Reports the screenshot location</li>\
-\'a0 \'a0 \'a0* <li>Loads the corresponding home page URL</li>\
-\'a0 \'a0 \'a0* </ul>\
-\'a0 \'a0 \'a0*\
-\'a0 \'a0 \'a0* @param locale locale of the base URL (e.g. "US"=\{testEnvironment\}.com)\
-\'a0 \'a0 \'a0*/\
-\'a0 \'a0 public void initialize(String locale) \{\
-\'a0 \'a0 \'a0 \'a0 String _locale;\
-\'a0 \'a0 \'a0 \'a0 if (globalURLs.containsKey(locale)) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 _locale = globalURLs.get(locale);\
-\'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 _locale = ResourceBundleUtils.getProperty(locale);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 globalURLs.put(locale, _locale);\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 setLanguage(locale);\
-\'a0 \'a0 \'a0 \'a0 if (globalLocales.containsKey(getLanguage())) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 setLocale(globalLocales.get(locale));\
-\'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 setLocale(ResourceBundleUtils.getProperty("LOCALE_CODE_" + locale));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 globalLocales.put(locale, getLocale());\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 _locale = _locale.replaceAll("\\\\\{testEnvironment\}", m_environment);\
-\'a0 \'a0 \'a0 \'a0 if (m_environment.matches(("(?i)swi-bpv.marriott|uat02.marriott|uat03.marriott|aries-prodreplica.marriott"))) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (locale.equalsIgnoreCase("JP")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 _locale = _locale.replaceAll("\\\\.co\\\\.jp", ".jp");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 Environment e = new Environment(m_environment);\
-\'a0 \'a0 \'a0 \'a0 MarriottWebDriverEventListener.setPageCount(-1);\
-\'a0 \'a0 \'a0 \'a0 getDriver().get(e.buildURL(_locale));\
-\'a0 \'a0 \'a0 \'a0 MarriottWebDriverEventListener.setPageCount(0);\
-\'a0 \'a0 \'a0 \'a0 loadURL("/default.mi" + (m_environment.contains("perftest") ? "?AKAQA=qa4" :\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 (m_environment.equals("marriott") ? "?AKAQA=" + PRODUCTION_SERVER : "")));\
-\
-\'a0 \'a0 \'a0 \'a0 if(m_environment.equals("marriott")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 /* Add cookie for Shape */\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 Cookie shapeCookie = new Cookie("MI_AUTO", "true");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 getDriver().manage().addCookie(shapeCookie);\
-\'a0 \'a0 \'a0 \'a0 \}\
-\
-\'a0 \'a0 \'a0 \'a0 if(multiRate) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 loadURL("?test=multiratesearch");\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 protected boolean isNotProduction() \{\
-\'a0 \'a0 \'a0 \'a0 return !m_environment.equalsIgnoreCase("marriott");\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 /**\
-\'a0 \'a0 \'a0* <h2>Loads a URL independent of the base URL</h2>\
-\'a0 \'a0 \'a0* <ul>\
-\'a0 \'a0 \'a0* <li>Loads URL</li>\
-\'a0 \'a0 \'a0* <li>Waits for next page to load completely</li>\
-\'a0 \'a0 \'a0* <li>Takes a screenshot, if flag is set</li>\
-\'a0 \'a0 \'a0* </ul>\
-\'a0 \'a0 \'a0*\
-\'a0 \'a0 \'a0* @param target_URL full URL of the page to be loaded\
-\'a0 \'a0 \'a0*/\
-\'a0 \'a0 protected void loadFullURL(String target_URL) \{\
-\'a0 \'a0 \'a0 \'a0 getDriver().get(target_URL);\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 /**\
-\'a0 \'a0 \'a0* <h2>Navigates back on the current browser by simulating a back button\
-\'a0 \'a0 \'a0* press</h2>\
-\'a0 \'a0 \'a0*/\
-\'a0 \'a0 protected void navigateBack() \{\
-\'a0 \'a0 \'a0 \'a0 getDriver().navigate().back();\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 @Parameters(\{"browser"\})\
-\'a0 \'a0 @BeforeMethod(alwaysRun = true)\
-\'a0 \'a0 protected void openBrowser(Method method, @Optional String browser) \{\
-\'a0 \'a0 \'a0 \'a0 if (browser == null) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 browser = DEFAULT_BROWSER;\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 setCurrentMethod(method);\
-\'a0 \'a0 \'a0 \'a0 setBrowserNeeded(true);\
-\'a0 \'a0 \'a0 \'a0 setDriverType(browser);\
-\'a0 \'a0 \'a0 \'a0 openBrowserWindow();\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 @BeforeMethod(alwaysRun = true)\
-\'a0 \'a0 protected void initTestData(Method method) \{\
-\'a0 \'a0 \'a0 \'a0 //tracker.put(getLanguage() + "-" + getClass().getName() + "." + method.getName(), false);\
-\'a0 \'a0 \'a0 \'a0 //System.out.println("Status: -1"getClass().getName() + "." + method.getName());\
-\'a0 \'a0 \'a0 \'a0 setSearchDetails();\
-\'a0 \'a0 \'a0 \'a0 setReservationDetails(getClass().getPackage().getName().endsWith("ERS"));\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 protected void openBrowserWindow() \{\
-\'a0 \'a0 \'a0 \'a0 java.util.logging.Logger.getLogger("org.openqa.selenium.remote").setLevel(Level.OFF);\
-\'a0 \'a0 \'a0 \'a0 if (getDriverType().equals(INTERNET_EXPLORER)) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 WebDriverManager.iedriver().setup();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 InternetExplorerOptions options = new InternetExplorerOptions()\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 .requireWindowFocus()\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 .ignoreZoomSettings()\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 .introduceFlakinessByIgnoringSecurityDomains();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 options.setCapability("silent", true);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 options.setCapability(CapabilityType.ACCEPT_SSL_CERTS, true);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 setDriver(new InternetExplorerDriver(options));\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 if (getDriverType().equals(CHROME)) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 WebDriverManager.chromedriver().setup();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 ChromeOptions options = new ChromeOptions();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 options.setExperimentalOption("useAutomationExtension", false);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 options.addArguments("disable-infobars");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 System.setProperty("webdriver.chrome.silentOutput", "true");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 setDriver(new ChromeDriverEx(options));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch (Exception e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 e.printStackTrace();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 if (getDriverType().equals(FIREFOX)) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 WebDriverManager.firefoxdriver().setup();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 FirefoxProfile profile = new FirefoxProfile();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 profile.setAcceptUntrustedCertificates(true);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (Boolean.parseBoolean(ResourceBundleUtils.getProperty("enable_firebug"))) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 String fileLocation = null;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 fileLocation = MAF.class.getClassLoader().getResource(ResourceBundleUtils.getProperty("firebug")).getPath();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch (NullPointerException exception) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 exception.printStackTrace();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 profile.addExtension(new File(fileLocation));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 FirefoxOptions options = new FirefoxOptions();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 options.setProfile(profile);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 setDriver(new FirefoxDriver(options));\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();\
-\'a0 \'a0 \'a0 \'a0 int height = gd.getDisplayMode().getHeight();\
-\'a0 \'a0 \'a0 \'a0 MarriottWebDriverEventListener webDriverEventListener = new MarriottWebDriverEventListener();\
-\'a0 \'a0 \'a0 \'a0 getDriver().register(webDriverEventListener);\
-\'a0 \'a0 \'a0 \'a0 if (System.getProperty("{\field{\*\fldinst{HYPERLINK "http://os.name/"}}{\fldrslt \cf3 \ul \ulc3 \strokec3 os.name}}").contains("Windows")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 getDriver().manage().window().maximize();\
-\'a0 \'a0 \'a0 \'a0 \} else \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 getDriver().manage().window().setPosition(new Point(0, 0));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 getDriver().manage().window().setSize(new Dimension(1920, height));\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 getDriver().manage().timeouts().pageLoadTimeout(120, TimeUnit.SECONDS);\
-\'a0 \'a0 \'a0 \'a0 getDriver().manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);\
-\'a0 \'a0 \'a0 \'a0 if (!m_environment.contains("perf")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 getDriver().manage().deleteAllCookies();\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 protected void returnToCurrentWindow(String currentWindowHandle) \{\
-\'a0 \'a0 \'a0 \'a0 setDriver(getDriver().switchTo().window(currentWindowHandle));\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 protected void scrollClick(WebElement element) \{\
-\'a0 \'a0 \'a0 \'a0 Actions actions = new Actions(getDriver());\
-\'a0 \'a0 \'a0 \'a0 String text = element.getText();\
-\'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 actions.moveToElement(element).click().perform();\
-\'a0 \'a0 \'a0 \'a0 \} catch (ElementNotVisibleException enve) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 checkForseePopup();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 checkForChatPopup();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 actions.moveToElement(element).click().perform();\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 if (!text.equals("")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 report("Clicked: " + text);\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 waitForPageLoaded(getDriver());\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 /**\
-\'a0 \'a0 \'a0* This click method should be used only when the regular element.click() is not working\
-\'a0 \'a0 \'a0*/\
-\'a0 \'a0 protected void clickUsingJavaScript(WebElement element) \{\
-\'a0 \'a0 \'a0 \'a0 getDriver().executeScript("arguments[0].click();", element);\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public void scrollTo(int x, int y) \{\
-\'a0 \'a0 \'a0 \'a0 JavascriptExecutor jse = getDriver();\
-\'a0 \'a0 \'a0 \'a0 jse.executeScript("scroll(" + x + "," + y + ");");\
-\'a0 \'a0 \'a0 \'a0 report("Scrolled to coordinate:" + y);\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public void scrollTo(WebElement element, int adjustPixels) \{\
-\'a0 \'a0 \'a0 \'a0 scrollTo(0, element.getLocation().y - adjustPixels);\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public void selectDate(String month, int date, int year) \{\
-\'a0 \'a0 \'a0 \'a0 LocalDate now = LocalDate.now();\
-\'a0 \'a0 \'a0 \'a0 LocalDate wanted = LocalDate.of(year, getMonthNumber(month), date);\
-\'a0 \'a0 \'a0 \'a0 selectDate((int) ChronoUnit.DAYS.between(now, wanted));\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public void selectFromAutocomplete() \{\
-\'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 WebElement mCurrentForm = getDriver().switchTo().activeElement();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 while (!mCurrentForm.getTagName().equals("form")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 mCurrentForm = mCurrentForm.findElement(By.xpath(".."));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 WebElement autoSuggest = mCurrentForm.findElement(By.cssSelector("ul.autocomplete-list"));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if(getDriver().getCurrentUrl().contains("search/findHotels.mi"))\{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 new WebDriverWait(getDriver(), 10).until(ExpectedConditions.numberOfElementsToBeMoreThan(By.cssSelector("ul.autocomplete-list[style*='display: block'] li"), 0));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}else\{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 new WebDriverWait(getDriver(), 10).until(ExpectedConditions.numberOfElementsToBeMoreThan(By.cssSelector("ul.autocomplete-list li"), 0));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 By autocompleteItemLocator;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 autocompleteItemLocator = By.cssSelector("li[role='menuitem'] > [data-index='0']");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 WebElement autocompleteItem = autoSuggest.findElement(autocompleteItemLocator);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 String textSelected = autocompleteItem.getText();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 autocompleteItem.click();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 report("Selected '" + textSelected + "' from auto complete");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if(!getDriver().getCurrentUrl().contains("meeting"))\{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 WebElement e = mCurrentForm.findElement(By.name("destinationAddress.city"));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 String value = e.getAttribute("value");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 long currentTime = System.currentTimeMillis();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 long waitTime = currentTime + 5000;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 while (value.equalsIgnoreCase("")) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 value = e.getAttribute("value");\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (System.currentTimeMillis() > waitTime) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 break;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \} catch (NoSuchElementException | TimeoutException e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 report("Autocomplete list was never displayed");\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 /**\
-\'a0 \'a0 \'a0* <h2>Sets a sub location for a tests screenshots</h2> Helpful when tests\
-\'a0 \'a0 \'a0* are data driven and may overwrite previous screenshots by default\
-\'a0 \'a0 \'a0*\
-\'a0 \'a0 \'a0* @param subLocation sub location to store screenshots under the main test folder\
-\'a0 \'a0 \'a0*/\
-\'a0 \'a0 protected void setScreenshotSublocation(String subLocation) \{\
-\'a0 \'a0 \'a0 \'a0 File f = getFile();\
-\'a0 \'a0 \'a0 \'a0 f = new File(f, subLocation);\
-\'a0 \'a0 \'a0 \'a0 setFile(f);\
-\'a0 \'a0 \'a0 \'a0 boolean mkdirs = f.mkdirs();\
-\'a0 \'a0 \'a0 \'a0 if (mkdirs) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 FileUtils.cleanDirectory(f);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch (IOException ignored) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 setScreenNum(0);\
-\'a0 \'a0 \'a0 \'a0 Reporter.getCurrentTestResult().setAttribute("screenshot-location", f.getAbsolutePath());\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 protected void switchToPopup(String currentWindowHandle) \{\
-\'a0 \'a0 \'a0 \'a0 Set<String> allWindowHandles = getDriver().getWindowHandles();\
-\'a0 \'a0 \'a0 \'a0 for (String windowHandle : allWindowHandles) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (!windowHandle.equals(currentWindowHandle)) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 setDriver(getDriver().switchTo().window(windowHandle));\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 break;\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public void waitForPageLoaded(WebDriver driver) \{\
-\'a0 \'a0 \'a0 \'a0 ExpectedCondition<Boolean> condition = driver1 -> getDriver().executeScript("return document.readyState").equals("complete");\
-\'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 WebDriverWait wait = new WebDriverWait(driver, 120);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 wait.until(condition);\
-\'a0 \'a0 \'a0 \'a0 \} catch (Exception error) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 takeScreenshot();\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 public void waitForSeconds(double waitSeconds) \{\
-\'a0 \'a0 \'a0 \'a0 waitSeconds = waitSeconds * 1000;\
-\'a0 \'a0 \'a0 \'a0 Calendar currentTime = Calendar.getInstance();\
-\'a0 \'a0 \'a0 \'a0 long currentTimeMillis = currentTime.getTimeInMillis();\
-\'a0 \'a0 \'a0 \'a0 long secCounter = 0;\
-\'a0 \'a0 \'a0 \'a0 while (secCounter < waitSeconds) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 Calendar newTime = Calendar.getInstance();\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 secCounter = (newTime.getTimeInMillis()) - (currentTimeMillis);\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 protected void waitUntilElementToBeClickable(WebElement element) \{\
-\'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 new WebDriverWait(getDriver(), 15).until((ExpectedConditions.elementToBeClickable(element)));\
-\'a0 \'a0 \'a0 \'a0 \} catch (Exception e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 fail("Unable to find element with selector : " + element.toString() + " On page : " + getDriver().getCurrentUrl(), Execution.STOP);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 e.printStackTrace();\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\'a0 \'a0 /**\
-\'a0 \'a0 \'a0* <h2>Used for verifying a page is loaded completely. Method report failure/pass and continue;Caller is responsible for terminate or continue execution </h2>\
-\'a0 \'a0 \'a0*\
-\'a0 \'a0 \'a0* @param Locator \'a0 \'a0 to be verified- usually the most frequently used element OR which is loaded last\
-\'a0 \'a0 \'a0* @param elementName the element name to be printed in report;( only on failure)-SGO-24 Sep\
-\'a0 \'a0 \'a0*/\
-\'a0 \'a0 public boolean waitUntilVisibilityOf(By Locator, String elementName) \{\
-\'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 new WebDriverWait(MyThreadLocal.getDriver(), 30).until(ExpectedConditions.visibilityOfElementLocated(Locator));//getting warning on advance search page for US locale\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 return true;\
-\'a0 \'a0 \'a0 \'a0 \} catch (Exception e) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 fail("Unable to find element: " + elementName + " on " + getDriver().getCurrentUrl(), Execution.CONTINUE);\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 List<WebElement> errorElement = getDriver().findElements(By.cssSelector("t-error-message")); //Shows Server stubborn, error if present\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (errorElement.size() > 0) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 fail("Error/Warning: " + errorElement.get(0).getText());\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch (Exception error1) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 try \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 List<WebElement> errorElement = getDriver().findElements(By.cssSelector("[data-component-name=unexpectedErrorMessage]"));//Shows errors like 800 page, if present\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 if (errorElement.size() > 0) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 fail("Error/Warning: " + errorElement.get(0).getText());\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \} catch (Exception ignored) \{\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \'a0 \'a0 \'a0 \'a0 return false;\
-\'a0 \'a0 \'a0 \'a0 \}\
-\'a0 \'a0 \}\
-\
-\}}
+import com.aventstack.extentreports.MediaEntityBuilder;
+import com.github.javafaker.Faker;
+import com.marriott.automation.pages.Book.types.MarshaCode;
+import com.marriott.automation.superhelper.elements.widget.CheckBox;
+import com.marriott.automation.superhelper.enums.Execution;
+import com.marriott.automation.superhelper.enums.RewardsMember;
+import com.marriott.automation.superhelper.exceptions.*;
+import com.marriott.automation.superhelper.listeners.*;
+import com.marriott.automation.superhelper.reporting.EmailableReporter;
+import com.marriott.automation.superhelper.reporting.JSONReporter;
+import com.marriott.automation.superhelper.reporting.MarriottReportUtils;
+import io.github.bonigarcia.wdm.WebDriverManager;
+import org.apache.commons.io.FileUtils;
+import org.apache.log4j.Logger;
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.Point;
+import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxOptions;
+import org.openqa.selenium.firefox.FirefoxProfile;
+import org.openqa.selenium.ie.InternetExplorerDriver;
+import org.openqa.selenium.ie.InternetExplorerOptions;
+import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.remote.CapabilityType;
+import org.openqa.selenium.support.ui.ExpectedCondition;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Wait;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.Reporter;
+import org.testng.annotations.Optional;
+import org.testng.annotations.*;
+
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.stream.Collectors;
+
+import static com.marriott.automation.superhelper.MyThreadLocal.*;
+import static org.testng.AssertJUnit.assertTrue;
+
+/**
+ * MAF (Marriott Automation Framework) contains browser and thread setup code
+ * and reusable functions that are used throughout pages and scripts.
+ *
+ * @author ceccl047
+ */
+@Listeners({MarriottCancelListener.class, MarriottConfigurationListener.class,
+        MarriottMethodInterceptor.class, MarriottSuiteListener.class, MarriottTestListener.class,
+        EmailableReporter.class, JSONReporter.class})
+public class MAF {
+
+    public static final boolean CLOSE_BROWSER = Boolean.parseBoolean(ResourceBundleUtils.getProperty("close_browser"));
+    public static final String AKAMAI = "bWFycmlvdHQ6JTIxJTI0a0QyYkY3JTI4ZjU3JTIzWQ==";
+    private static final String INTERNET_EXPLORER = ResourceBundleUtils.getProperty("internet_explorer");
+    private static final String CHROME = ResourceBundleUtils.getProperty("chrome");
+    private static final String FIREFOX = ResourceBundleUtils.getProperty("firefox");
+    private static final String PRODUCTION_SERVER = ResourceBundleUtils.getProperty("production_server");
+    private static final String DEFAULT_BROWSER = "Chrome";
+    public static boolean OVERWRITE_FILES = Boolean.valueOf(ResourceBundleUtils.getProperty("overwrite_files"));
+    public static boolean screenshotsWanted = Boolean.parseBoolean(ResourceBundleUtils.getProperty("take_screenshots"));
+    public static String EXECUTION_FOLDER = "";
+    public static String screenshotLocation;
+    public static Properties prop;
+    protected static String m_environment;
+    private static Logger LOG = Logger.getLogger(MAF.class);
+    private static Logger L = Logger.getLogger(MAF.class);
+    private static Map<String, String> globalURLs = new HashMap<>();
+    private static Map<String, String> globalLocales = new HashMap<>();
+    private static String propFileName = "src/com/marriott/automation/superhelper/data/userDetails/User-Credentials.properties";
+    private static FileInputStream inputStream = null;
+    private static boolean isGroupsTest;
+    public static boolean multiRate = Boolean.parseBoolean(ResourceBundleUtils.getProperty("test_environment_multirate"));
+    protected static HashMap<String, Boolean> tracker = new HashMap<>();
+
+    static {
+        Calendar cal = Calendar.getInstance();
+        String month = new SimpleDateFormat("MMM").format(cal.getTime());
+        int year = cal.get(Calendar.YEAR);
+        int date = cal.get(Calendar.DATE);
+        int hour = cal.get(Calendar.HOUR_OF_DAY);
+        int minute = cal.get(Calendar.MINUTE);
+        int second = cal.get(Calendar.SECOND);
+        if (!OVERWRITE_FILES) {
+            EXECUTION_FOLDER = month + "_" + String.format("%02d", date) + "_" + year + File.separator
+                    + String.format("%02d", hour) + "-" + String.format("%02d", minute) + "-"
+                    + String.format("%02d", second) + File.separator;
+        }
+        screenshotLocation = "test-output" + File.separator + EXECUTION_FOLDER + File.separator + "screenshots" + File.separator;
+        loadPropertiesFile();
+    }
+
+    private static void loadPropertiesFile(){
+        try {
+            inputStream = new FileInputStream(propFileName);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        prop = new Properties();
+        try {
+            prop.load(inputStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected final XLSXParser parse = new XLSXParser();
+    //public RewardsMember ucMember;
+
+    protected boolean dollarZeroFlag = true; // Back end -$0 flag setting for CVV field display on Guestinfo and Review details Page.
+    protected Faker faker = new Faker();
+
+    public static RewardsMember ucMember(){
+        return MyThreadLocal.getUcMember();
+    }
+
+    private static void addVerificationFailure(Throwable e) {
+        List<Throwable> verificationFailures = getVerificationFailures();
+        getVerificationMap().put(Reporter.getCurrentTestResult(), verificationFailures);
+        verificationFailures.add(e);
+    }
+
+    public static void captureFullScreen() {
+        if (getDriverType().equalsIgnoreCase("chrome")) {
+            setScreenNum(getScreenNum() + 1);
+            try {
+                BufferedImage screenshot = ImageIO.read(new ByteArrayInputStream(((ChromeDriverEx) getDriver().getWrappedDriver()).getFullScreenshotAs(OutputType.BYTES)));
+                ImageIO.write(screenshot, "PNG", new File(getFile() + File.separator
+                        + File.separator + String.format("%010d", getScreenNum()) + ".png"));
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static void captureScreen() {
+        setScreenNum(getScreenNum() + 1);
+        try {
+            BufferedImage screenshot = ImageIO.read(new ByteArrayInputStream(getDriver().getScreenshotAs(OutputType.BYTES)));
+            ImageIO.write(screenshot, "PNG", new File(getFile() + File.separator
+                    + File.separator + String.format("%010d", getScreenNum()) + ".png"));
+
+        } catch (Exception ignored) {
+        }
+    }
+
+    protected static void checkForErrors() {
+        String currentURL = MyThreadLocal.getDriver().getCurrentUrl();
+        if (currentURL.contains("invalidPath")) {
+            fail(new InvalidPathException());
+        }
+        if (currentURL.contains("systemMaintenance")) {
+            fail(new SystemMaintenanceException());
+        }
+        if (currentURL.contains("/error.mi")) {
+            fail(new GeneralErrorException());
+        }
+        if (currentURL.contains("800Page")) {
+            fail(new _800PageException());
+        }
+        String pageSource = MyThreadLocal.getDriver().getPageSource();
+        if (pageSource.contains("504 Gateway Time-out") || pageSource.contains("502 Bad Gateway") || pageSource.contains("The server didn't respond in time")) {
+            fail(new GatewayTimeoutException());
+        }
+        if (pageSource.contains("503 Unavailable") || pageSource.contains("503 Service Unavailable") ||
+                pageSource.contains("503 unavailable") || pageSource.contains("503 service unavailable")) {
+            fail(new _503Exception());
+        }
+        if (pageSource.contains("Error 500")) {
+            fail("JSP Error 500 seen on the page - " + MyThreadLocal.getDriver().getCurrentUrl(), Execution.CONTINUE);
+        }
+    }
+
+    /**
+     * <h2>Reports a failure of a verification to the test that will show as red
+     * in the report</h2>
+     *
+     * @param message           text to report as a failure in the output report
+     * @param continueExecution if <code>true</code>, continues test script execution.
+     *                          Otherwise, throws an AssertionError and stops test execution.
+     */
+    public static void fail(String message, Execution continueExecution, boolean override) {
+        if (continueExecution == Execution.CONTINUE) {
+            try {
+                assertTrue(false);
+            } catch (Throwable e) {
+                addVerificationFailure(e);
+                takeScreenshot(true);
+                Reporter.log("<div class=\"row fail\">" + message + "</div>");
+                String f = (getFile() + File.separator + String.format("%010d", getScreenNum()) + ".png").replaceFirst("test-output/", "");
+                try {
+                    MarriottTestListener.test.get().warning(message, MediaEntityBuilder.createScreenCaptureFromPath(f).build());
+                } catch (IOException ignored) {
+                }
+            }
+        } else {
+            throw new AssertionError(message);
+        }
+    }
+
+    public static void fail(String message, Execution continueExecution) {
+        fail(message, continueExecution, true);
+    }
+
+    public static void fail(AssertionError throwable) {
+        throw throwable;
+    }
+
+    public static void fail(AssertionError throwable, Execution execution) {
+        if (execution == Execution.CONTINUE) {
+            addVerificationFailure(throwable);
+            Reporter.log("<div class=\"row fail\">" + throwable.getMessage() + "</div>");
+            MarriottTestListener.test.get().warning(throwable.getMessage());
+        } else {
+            throw throwable;
+        }
+    }
+
+    public static void fail(String message) {
+        fail(message, Execution.CONTINUE);
+    }
+
+    public static void failNoScreenshot(String message, Execution continueExecution) {
+        fail(message, continueExecution, false);
+    }
+
+    protected static String getRandomCityDestination() {
+        String locale = getLanguage();
+        if (locale.equals("PT") || locale.equals("BR")) {
+            locale = "PTBR";
+        }
+        List<String> cities;
+        try {
+            cities = FileUtils.readLines(new File("src/com/marriott/automation/superhelper/data/cities_" + locale + ".txt"), "utf-8");
+        } catch (IOException e) {
+            try {
+                cities = FileUtils.readLines(new File("src/com/marriott/automation/superhelper/data/cities_US.txt"), "utf-8");
+            } catch (IOException e1) {
+                return null;
+            }
+        }
+        return cities.get(new Random().nextInt(cities.size()));
+    }
+
+    protected static String getRandomMarshaCode() {
+        return getRandomMarshaCode(MarshaCode.MR);
+    }
+
+    protected static String getRandomMarshaCode(MarshaCode marshacode) {
+        List<String> marsha;
+        String filename;
+        switch (marshacode) {
+            case MR:
+                filename = "marshaCodes.txt";
+                break;
+            case ERS:
+                filename = "marshaCodesERS.txt";
+                break;
+            case RITZ_EDITION:
+                filename = "marshaCodesRitzEdition.txt";
+                break;
+            case SNA:
+                filename = "marshaCodesSNA.txt";
+                break;
+            case ERS_MIGRATED:
+                filename = "marshaCodesERSMigrated.txt";
+                break;
+            case HWS_T2:
+                filename = "hws/marshaCodesHWS.txt";
+                break;
+            case HWS_T3:
+                filename = "hws/marshaCodesT3.txt";
+                break;
+            default:
+                filename = "marshaCodes.txt";
+                break;
+        }
+        try {
+            marsha = FileUtils.readLines(new File("src/com/marriott/automation/superhelper/data/" + filename), "utf-8");
+        } catch (IOException e) {
+            return null;
+        }
+        return marsha.get(new Random().nextInt(marsha.size()));
+    }
+
+    private static List<Throwable> getVerificationFailures() {
+        List<Throwable> verificationFailures = getVerificationMap().get(Reporter.getCurrentTestResult());
+        return verificationFailures == null ? new ArrayList<>() : verificationFailures;
+    }
+
+    /**
+     * <h2>Loads a relative URL based on the base URL for that test session</h2>
+     * <ul>
+     * <li>Loads relative URL (e.g. {testEnvironment}/default.mi - loads Mcom
+     * home page)</li>
+     * <li>Waits for next page to load completely</li>
+     * <li>Takes a screenshot, if flag is set</li>
+     * </ul>
+     *
+     * @param target_URL relative URL of the page to be loaded
+     */
+    public static void loadURL(String target_URL) {
+        if (!target_URL.startsWith("/")) {
+            target_URL = "/" + target_URL;
+        }
+        if (!getDriver().getCurrentUrl().equals(getURL() + target_URL)) {
+            try {
+                getDriver().get(getURL() + target_URL);
+            } catch (TimeoutException te) {
+                try {
+                    getDriver().navigate().refresh();
+                } catch (TimeoutException te1) {
+                    fail(new com.marriott.automation.superhelper.exceptions.TimeoutException());
+                }
+            }
+        }
+    }
+
+    /**
+     * <h2>Reports a successful verification to the test that will show as green
+     * in the report</h2>
+     *
+     * @param message text to report as a success in the output report
+     */
+    public static void pass(String message) {
+        Reporter.log("<div class=\"row pass\">" + message
+                + "</div>");
+        MarriottTestListener.test.get().pass(message);
+    }
+
+    /**
+     * <h2>Reports a message in the report</h2>
+     *
+     * @param message text to report in the output report
+     */
+    public static void report(String message) {
+        Reporter.log("<div class=\"row\">" + message + "</div>");
+        MarriottTestListener.test.get().info(message);
+    }
+
+    public static void defect(String defectSummary, String defectID) {
+        report("<a target=\"_new\" href=\"https://atlassian.marriott.com/browse/" + defectID + "\">" + defectSummary + ": " + defectID);
+    }
+
+    public static void selectDate(int daysFromToday) {
+        WebElement mCurrentDateInput = getDriver().switchTo().activeElement();
+        boolean oldCalendarPage = getDriver().getCurrentUrl().contains("meeting") || getDriver().getCurrentUrl().contains("contact") || getDriver().getCurrentUrl().contains("claimForm");
+        boolean isNewCalendar = !oldCalendarPage && getDriver().findElements(By.cssSelector(".js-date-pick-container .new-container")).stream().filter(e -> e.isDisplayed()).collect(Collectors.toList()).size() > 0;
+        if(isNewCalendar){
+            try{
+                boolean isCheckout = mCurrentDateInput.getAttribute("id").matches(".*?[tT]oDate.*?") ||
+                        mCurrentDateInput.getAttribute("id").equalsIgnoreCase("gi-checkout-date");
+                if (!isCheckout) {
+                    WebElement btnPreviousMonth = getDriver().findElement(By.cssSelector("th[class*='t-prev']"));
+                    boolean btnPreviousMonthIsEnabled = btnPreviousMonth.getAttribute("class").contains("disabled");
+                    while (!btnPreviousMonthIsEnabled) {
+                        btnPreviousMonth.click();
+                        btnPreviousMonth = getDriver().findElement(By.cssSelector("th[class*='t-prev']"));
+                        btnPreviousMonthIsEnabled = btnPreviousMonth.getAttribute("class").contains("disabled");
+                    }
+                }
+                int numClicks;
+                LocalDate now = LocalDate.now();
+                LocalDate wanted = LocalDate.now().plusDays(daysFromToday);
+                Object offsetHours1 = getDriver().executeScript("return (new Date(arguments[0], arguments[1], " +
+                                "arguments[2], arguments[3], arguments[4], arguments[5], arguments[6])).getTimezoneOffset()/60", wanted.getYear(),
+                        wanted.getMonthValue() - 1, wanted.getDayOfMonth(), 0, 0, 0, 0);
+                double offsetHours;
+                if (offsetHours1 instanceof Long) {
+                    offsetHours = ((Long) offsetHours1).doubleValue();
+                } else {
+                    offsetHours = (double) offsetHours1;
+                }
+                int partOne = Math.abs((int) offsetHours);
+                double partTwo = offsetHours % 1;
+                String offset = String.format("%s%02d:%s", offsetHours > 0 ? "-" : "+", partOne, (partTwo == 0) ? "00" : "30");
+                String milliseconds = wanted.atStartOfDay().toEpochSecond(ZoneOffset.of(offset)) + "000";
+                if (wanted.getYear() == (now.getYear() + 1)) {
+                    numClicks = (wanted.getMonthValue() + 12) - now.getMonthValue();
+                } else {
+                    numClicks = wanted.getMonthValue() - now.getMonthValue();
+                }
+                if (isCheckout) {
+                    LocalDate checkInWanted = LocalDate.now().plusDays(getCheckInDays());
+                    if (checkInWanted.getDayOfMonth() == checkInWanted.lengthOfMonth()) {
+                        numClicks = 0;
+                    } else {
+                        numClicks = (int) ChronoUnit.MONTHS.between(checkInWanted, wanted);
+                    }
+                    setCheckInDays(0);
+                } else {
+                    setCheckInDays(daysFromToday);
+                }
+                WebElement btnNextMonth;
+                for (int i = 0; i < numClicks; i++) {
+                    btnNextMonth = getDriver().findElement(By.cssSelector("th[class='t-arrow t-next']"));
+                    btnNextMonth.click();
+                }
+                try {
+                    WebElement mDate;
+                    mDate = getDriver().findElement(By.cssSelector("td[data-t-date='" + milliseconds + "']"));
+                    new WebDriverWait(getDriver(), 10).until(ExpectedConditions.visibilityOf(mDate));
+                    mDate.click();
+                    String selectedDate = wanted.format(DateTimeFormatter.ofPattern("EE, MMM d, yyyy"));
+                    report("Set " + (!isCheckout ? "from" : "to") + " date to " + selectedDate);
+                    if(!isCheckout){
+                        getSearchDetails().setCheckInDate(selectedDate);
+                    }else{
+                        getSearchDetails().setCheckOutDate(selectedDate);
+                    }
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                }
+            } catch(Exception e) {
+                fail("Issue when selecting " + (getDriver().switchTo().activeElement().getAttribute("id").matches(".*?[tT]oDate.*?") ? "check-out" : "check-in") + " date", Execution.CONTINUE);
+            }
+        }
+        else {
+            try {
+                boolean isCheckout = mCurrentDateInput.getAttribute("id").matches(".*?[tT]oDate.*?") ||
+                        mCurrentDateInput.getAttribute("id").equalsIgnoreCase("gi-checkout-date");
+                if (!isCheckout) {
+                    WebElement btnPreviousMonth = getDriver().findElement(By.cssSelector("div.picker--opened div.picker__nav--prev"));
+                    boolean btnPreviousMonthIsEnabled = btnPreviousMonth.getAttribute("class").contains("disabled");
+                    while (!btnPreviousMonthIsEnabled) {
+                        btnPreviousMonth.click();
+                        btnPreviousMonth = getDriver().findElement(By.cssSelector("div.picker--opened div.picker__nav--prev"));
+                        btnPreviousMonthIsEnabled = btnPreviousMonth.getAttribute("class").contains("disabled");
+                    }
+                }
+                int numClicks;
+                LocalDate now = LocalDate.now();
+                LocalDate wanted = LocalDate.now().plusDays(daysFromToday);
+                Object offsetHours1 = getDriver().executeScript("return (new Date(arguments[0], arguments[1], " +
+                                "arguments[2], arguments[3], arguments[4], arguments[5], arguments[6])).getTimezoneOffset()/60", wanted.getYear(),
+                        wanted.getMonthValue() - 1, wanted.getDayOfMonth(), 0, 0, 0, 0);
+                double offsetHours;
+                if (offsetHours1 instanceof Long) {
+                    offsetHours = ((Long) offsetHours1).doubleValue();
+                } else {
+                    offsetHours = (double) offsetHours1;
+                }
+                int partOne = Math.abs((int) offsetHours);
+                double partTwo = offsetHours % 1;
+                String offset = String.format("%s%02d:%s", offsetHours > 0 ? "-" : "+", partOne, (partTwo == 0) ? "00" : "30");
+                String milliseconds = wanted.atStartOfDay().toEpochSecond(ZoneOffset.of(offset)) + "000";
+                if (wanted.getYear() == (now.getYear() + 1)) {
+                    numClicks = (wanted.getMonthValue() + 12) - now.getMonthValue();
+                } else {
+                    numClicks = wanted.getMonthValue() - now.getMonthValue();
+                }
+                if (isCheckout) {
+                    LocalDate checkInWanted = LocalDate.now().plusDays(getCheckInDays());
+                    if (checkInWanted.getDayOfMonth() == checkInWanted.lengthOfMonth()) {
+                        numClicks = 0;
+                    } else {
+//                        numClicks = (int) ChronoUnit.MONTHS.between(checkInWanted, wanted);
+                        numClicks = wanted.getMonthValue() - checkInWanted.getMonthValue();
+                    }
+                    setCheckInDays(0);
+                } else {
+                    setCheckInDays(daysFromToday);
+                }
+                WebElement btnNextMonth;
+                if (!isCheckout && getDriver().getCurrentUrl().contains("meeting-event-hotels/meeting-planning.mi")) {
+                    btnNextMonth = getDriver().findElement(By.cssSelector("div.picker--opened div.picker__nav--next"));
+                    btnNextMonth.click();
+                }
+                for (int i = 0; i < numClicks; i++) {
+                    if (!isGroupsTest) {
+                        btnNextMonth = getDriver().findElement(By.cssSelector("div.picker--opened div.picker__nav--next"));
+                    } else {
+                        btnNextMonth = getDriver().findElement(By.cssSelector("div.picker__nav--next"));
+                    }
+                    btnNextMonth.click();
+                }
+                try {
+                    WebElement mDate;
+                    if (!isGroupsTest) {
+                        mDate = getDriver().findElement(By.cssSelector("div.picker--opened div[data-pick='" + milliseconds + "']"));
+                    } else {
+                        mDate = getDriver().findElement(By.cssSelector("div[data-pick='" + milliseconds + "']"));
+                    }
+                    new WebDriverWait(getDriver(), 10).until(ExpectedConditions.visibilityOf(mDate));
+                    mDate.click();
+                    String selectedDate = wanted.format(DateTimeFormatter.ofPattern("EE, MMM d, yyyy"));
+                    report("Set " + (!isCheckout ? "from" : "to") + " date to " + selectedDate);
+                    if(!isCheckout){
+                        getSearchDetails().setCheckInDate(selectedDate);
+                    }else{
+                        getSearchDetails().setCheckOutDate(selectedDate);
+                    }
+                } catch(Exception e) {
+                    System.out.println(e.getMessage());
+                }
+            } catch(Exception e) {
+                fail("Issue when selecting " + (getDriver().switchTo().activeElement().getAttribute("id").matches(".*?[tT]oDate.*?") ? "check-out" : "check-in") + " date", Execution.CONTINUE);
+            }
+        }
+    }
+
+    public static void selectDate(int daysFromToday, int numberOfNights) {
+        selectDate(daysFromToday);
+        selectDate(daysFromToday + numberOfNights);
+    }
+
+    public static void takeScreenshot() {
+        if (screenshotsWanted) {
+            captureScreen();
+        }
+    }
+
+    /**
+     * <h2>Takes a screenshot of the current driver's screen</h2>
+     */
+    public static void takeScreenshot(boolean override) {
+        if (override) {
+            captureScreen();
+        }
+    }
+
+    public static void waitUntilElementIsVisible(final WebElement element) {
+        ExpectedCondition<Boolean> expectation = _driver -> element.isDisplayed();
+        Wait<WebDriver> wait = new WebDriverWait(getDriver(), 10);
+        try {
+            wait.until(webDriver -> expectation);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
+     * <h2>Reports a warning message that will show as yellow in the report</h2>
+     *
+     * @param message text to report as a warning in the output report
+     */
+    public static void warning(String message) {
+        Reporter.log("<div class=\"row skip\">" + message + "</div>");
+        takeScreenshot(true);
+        String f = (getFile() + File.separator + String.format("%010d", getScreenNum()) + ".png").replaceFirst("test-output/", "");
+        try {
+            MarriottTestListener.test.get().warning(message, MediaEntityBuilder.createScreenCaptureFromPath(f).build());
+        } catch (IOException ignored) {
+        }
+    }
+
+    public void alertAccept() {
+        Alert alert = getDriver().switchTo().alert();
+        alert.accept();
+    }
+
+    @Parameters({"environment"})
+    @BeforeSuite(alwaysRun = true)
+    public void beforeSuite(@Optional String environment) {
+        if (environment != null) {
+            m_environment = (environment.equalsIgnoreCase("production") ? "marriott" : environment);
+        } else if (System.getProperty("environment") != null) {
+            m_environment = System.getProperty("environment");
+        } else {
+            m_environment = ResourceBundleUtils.getProperty("test_environment");
+        }
+        MarriottReportUtils.environmentVariables.put("Environment", m_environment);
+        if(m_environment.equalsIgnoreCase("marriott")) {
+            propFileName = "src/com/marriott/automation/superhelper/data/userDetails/Prod-User-Credentials.properties";
+            loadPropertiesFile();
+        }
+
+    }
+
+    /**
+     * <h2>Checks to see if the chat pop up is blocking interaction with
+     * elements on the page</h2>
+     * <ul>
+     * <li>Reports if the chat pop up is displayed</li>
+     * <li>Removes chat pop up</li>
+     * </ul>
+     */
+    private void checkForChatPopup() {
+        try {
+            getDriver().executeScript("document.querySelector('#salesforce_code_insert').remove();");
+        } catch (Exception e) {
+            L.warn("Error checking for chat popup", e);
+        }
+    }
+
+    /**
+     * <h2>Checks to see if the foresee pop up is blocking interaction with
+     * elements on the page</h2>
+     * <ul>
+     * <li>Reports if the Foresee pop up is displayed</li>
+     * <li>Removes Foresee pop up</li>
+     * </ul>
+     */
+    private void checkForseePopup() {
+        try {
+            long overlayLength = (long) getDriver().executeScript("return document.querySelector('#fsrOverlay').length;");
+            if (overlayLength == 1) {
+                getDriver().findElement(By.cssSelector("div.fsrDeclineButtonContainer")).click();
+            }
+        } catch (Exception e) {
+            L.warn("Error checking for foresee popup", e);
+        }
+    }
+
+    @AfterMethod(alwaysRun = true)
+    protected void closeBrowser() {
+        if (CLOSE_BROWSER) {
+            try {
+                getDriver().close();
+                getDriver().quit();
+            } catch (Exception exp) {
+                L.error("Error closing browser");
+            }
+        }
+        clearMethodThread();
+    }
+
+    public static String getDateFormat(String dateFormat, int daysFromToday) {
+        Calendar now = Calendar.getInstance();
+        now.add(Calendar.DATE, daysFromToday);
+        return new SimpleDateFormat(dateFormat).format(now.getTime());
+    }
+
+
+
+    @BeforeMethod(alwaysRun = true)
+    public void getMember(Method method) {
+        String declaringClass = method.getDeclaringClass().getName();
+        declaringClass = declaringClass.replace("com.marriott.automation.scripts.", "");
+        String userIdPwd = prop.getProperty(declaringClass + "." + method.getName());
+        if (userIdPwd != null) {
+            if(m_environment.equalsIgnoreCase("marriott")) {
+                userIdPwd = new String(Base64.getDecoder().decode(userIdPwd));
+            }
+            MyThreadLocal.setUcMember(new RewardsMember(userIdPwd.split(",")[0], userIdPwd.split(",")[1]));
+        } else {
+            String defaultUser = prop.getProperty("DEFAULT_USER");
+            if(m_environment.equalsIgnoreCase("marriott")) {
+                defaultUser = new String(Base64.getDecoder().decode(defaultUser));
+            }
+            MyThreadLocal.setUcMember(new RewardsMember(defaultUser.split(",")[0], defaultUser.split(",")[1]));
+        }
+        if(Arrays.asList(method.getAnnotation(Test.class).groups()).contains("group")){
+            isGroupsTest = true;
+        }
+    }
+
+    private int getMonthNumber(String inputMonth) {
+        return Month.valueOf(inputMonth.toUpperCase()).getValue();
+    }
+
+    /**
+     * Method to get the user credentials from User-Credentials property file.
+     *
+     * @param userType Key of user to retrieve from User-Credentials file
+     * @return RewardsMember of given type
+     */
+    public RewardsMember getUserDetails(String userType) {
+        String key;
+        String[] user;
+        RewardsMember member = null;
+        try {
+            key = prop.getProperty(userType);
+            user = key.split(",");
+            for (int i = 0; i < user.length; i++) {
+                user[i] = user[i].trim();
+            }
+            member = new RewardsMember(user[0], user[1]);
+        } catch (Exception e) {
+            LOG.debug("Unable to get member details.", e);
+        } finally {
+            try {
+                inputStream.close();
+            } catch (IOException e) {
+                LOG.debug("Unable to close file input stream.", e);
+            }
+        }
+        return member;
+    }
+
+    public CheckBox getVisibleCheckBox(List<CheckBox> checkBoxes) {
+        for (CheckBox c : checkBoxes) {
+            if (c.getLabel().isDisplayed()) {
+                return c;
+            }
+        }
+        return checkBoxes.get(0);
+    }
+
+    /**
+     * <h2>Initializes a browser session by setting the base URL</h2>
+     * <ul>
+     * <li>Reports the screenshot location</li>
+     * <li>Loads the corresponding home page URL</li>
+     * </ul>
+     *
+     * @param locale locale of the base URL (e.g. "US"={testEnvironment}.com)
+     */
+    public void initialize(String locale) {
+        String _locale;
+        if (globalURLs.containsKey(locale)) {
+            _locale = globalURLs.get(locale);
+        } else {
+            _locale = ResourceBundleUtils.getProperty(locale);
+            globalURLs.put(locale, _locale);
+        }
+        setLanguage(locale);
+        if (globalLocales.containsKey(getLanguage())) {
+            setLocale(globalLocales.get(locale));
+        } else {
+            setLocale(ResourceBundleUtils.getProperty("LOCALE_CODE_" + locale));
+            globalLocales.put(locale, getLocale());
+        }
+        _locale = _locale.replaceAll("\\{testEnvironment}", m_environment);
+        if (m_environment.matches(("(?i)swi-bpv.marriott|uat02.marriott|uat03.marriott|aries-prodreplica.marriott"))) {
+            if (locale.equalsIgnoreCase("JP")) {
+                _locale = _locale.replaceAll("\\.co\\.jp", ".jp");
+            }
+        }
+        Environment e = new Environment(m_environment);
+        MarriottWebDriverEventListener.setPageCount(-1);
+        getDriver().get(e.buildURL(_locale));
+        MarriottWebDriverEventListener.setPageCount(0);
+        loadURL("/default.mi" + (m_environment.contains("perftest") ? "?AKAQA=qa4" :
+                (m_environment.equals("marriott") ? "?AKAQA=" + PRODUCTION_SERVER : "")));
+
+        if(m_environment.equals("marriott")) {
+            /* Add cookie for Shape */
+            Cookie shapeCookie = new Cookie("MI_AUTO", "true");
+            getDriver().manage().addCookie(shapeCookie);
+        }
+
+        if(multiRate) {
+            loadURL("?test=multiratesearch");
+        }
+    }
+
+    protected boolean isNotProduction() {
+        return !m_environment.equalsIgnoreCase("marriott");
+    }
+
+    /**
+     * <h2>Loads a URL independent of the base URL</h2>
+     * <ul>
+     * <li>Loads URL</li>
+     * <li>Waits for next page to load completely</li>
+     * <li>Takes a screenshot, if flag is set</li>
+     * </ul>
+     *
+     * @param target_URL full URL of the page to be loaded
+     */
+    protected void loadFullURL(String target_URL) {
+        getDriver().get(target_URL);
+    }
+
+    /**
+     * <h2>Navigates back on the current browser by simulating a back button
+     * press</h2>
+     */
+    protected void navigateBack() {
+        getDriver().navigate().back();
+    }
+
+    @Parameters({"browser"})
+    @BeforeMethod(alwaysRun = true)
+    protected void openBrowser(Method method, @Optional String browser) {
+        if (browser == null) {
+            browser = DEFAULT_BROWSER;
+        }
+        setCurrentMethod(method);
+        setBrowserNeeded(true);
+        setDriverType(browser);
+        openBrowserWindow();
+    }
+
+    @BeforeMethod(alwaysRun = true)
+    protected void initTestData(Method method) {
+        //tracker.put(getLanguage() + "-" + getClass().getName() + "." + method.getName(), false);
+        //System.out.println("Status: -1"getClass().getName() + "." + method.getName());
+        setSearchDetails();
+        setReservationDetails(getClass().getPackage().getName().endsWith("ERS"));
+    }
+
+    protected void openBrowserWindow() {
+        java.util.logging.Logger.getLogger("org.openqa.selenium.remote").setLevel(Level.OFF);
+        if (getDriverType().equals(INTERNET_EXPLORER)) {
+            WebDriverManager.iedriver().setup();
+            InternetExplorerOptions options = new InternetExplorerOptions()
+                    .requireWindowFocus()
+                    .ignoreZoomSettings()
+                    .introduceFlakinessByIgnoringSecurityDomains();
+            options.setCapability("silent", true);
+            options.setCapability(CapabilityType.ACCEPT_SSL_CERTS, true);
+            setDriver(new InternetExplorerDriver(options));
+        }
+        if (getDriverType().equals(CHROME)) {
+            WebDriverManager.chromedriver().setup();
+            ChromeOptions options = new ChromeOptions();
+            options.setExperimentalOption("useAutomationExtension", false);
+            options.addArguments("disable-infobars");
+            System.setProperty("webdriver.chrome.silentOutput", "true");
+            try {
+                setDriver(new ChromeDriverEx(options));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        if (getDriverType().equals(FIREFOX)) {
+            WebDriverManager.firefoxdriver().setup();
+            FirefoxProfile profile = new FirefoxProfile();
+            profile.setAcceptUntrustedCertificates(true);
+            if (Boolean.parseBoolean(ResourceBundleUtils.getProperty("enable_firebug"))) {
+                String fileLocation = null;
+                try {
+                    fileLocation = MAF.class.getClassLoader().getResource(ResourceBundleUtils.getProperty("firebug")).getPath();
+                } catch (NullPointerException exception) {
+                    exception.printStackTrace();
+                }
+                profile.addExtension(new File(fileLocation));
+            }
+            FirefoxOptions options = new FirefoxOptions();
+            options.setProfile(profile);
+            setDriver(new FirefoxDriver(options));
+        }
+        GraphicsDevice gd = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
+        int height = gd.getDisplayMode().getHeight();
+        MarriottWebDriverEventListener webDriverEventListener = new MarriottWebDriverEventListener();
+        getDriver().register(webDriverEventListener);
+        if (System.getProperty("os.name").contains("Windows")) {
+            getDriver().manage().window().maximize();
+        } else {
+            getDriver().manage().window().setPosition(new Point(0, 0));
+            getDriver().manage().window().setSize(new Dimension(1920, height));
+        }
+        getDriver().manage().timeouts().pageLoadTimeout(120, TimeUnit.SECONDS);
+        getDriver().manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
+        if (!m_environment.contains("perf")) {
+            getDriver().manage().deleteAllCookies();
+        }
+    }
+
+    protected void returnToCurrentWindow(String currentWindowHandle) {
+        setDriver(getDriver().switchTo().window(currentWindowHandle));
+    }
+
+    protected void scrollClick(WebElement element) {
+        Actions actions = new Actions(getDriver());
+        String text = element.getText();
+        try {
+            actions.moveToElement(element).click().perform();
+        } catch (ElementNotVisibleException enve) {
+            checkForseePopup();
+            checkForChatPopup();
+            actions.moveToElement(element).click().perform();
+        }
+        if (!text.equals("")) {
+            report("Clicked: " + text);
+        }
+        waitForPageLoaded(getDriver());
+    }
+
+    /**
+     * This click method should be used only when the regular element.click() is not working
+     */
+    protected void clickUsingJavaScript(WebElement element) {
+        getDriver().executeScript("arguments[0].click();", element);
+    }
+
+    public void scrollTo(int x, int y) {
+        JavascriptExecutor jse = getDriver();
+        jse.executeScript("scroll(" + x + "," + y + ");");
+        report("Scrolled to coordinate:" + y);
+    }
+
+    public void scrollTo(WebElement element, int adjustPixels) {
+        scrollTo(0, element.getLocation().y - adjustPixels);
+    }
+
+    public void selectDate(String month, int date, int year) {
+        LocalDate now = LocalDate.now();
+        LocalDate wanted = LocalDate.of(year, getMonthNumber(month), date);
+        selectDate((int) ChronoUnit.DAYS.between(now, wanted));
+    }
+
+    public void selectFromAutocomplete() {
+        try {
+            WebElement mCurrentForm = getDriver().switchTo().activeElement();
+            while (!mCurrentForm.getTagName().equals("form")) {
+                mCurrentForm = mCurrentForm.findElement(By.xpath(".."));
+            }
+            WebElement autoSuggest = mCurrentForm.findElement(By.cssSelector("ul.autocomplete-list"));
+            if(getDriver().getCurrentUrl().contains("search/findHotels.mi")){
+                new WebDriverWait(getDriver(), 10).until(ExpectedConditions.numberOfElementsToBeMoreThan(By.cssSelector("ul.autocomplete-list[style*='display: block'] li"), 0));
+            }else{
+                new WebDriverWait(getDriver(), 10).until(ExpectedConditions.numberOfElementsToBeMoreThan(By.cssSelector("ul.autocomplete-list li"), 0));
+            }
+            By autocompleteItemLocator;
+            autocompleteItemLocator = By.cssSelector("li[role='menuitem'] > [data-index='0']");
+            WebElement autocompleteItem = autoSuggest.findElement(autocompleteItemLocator);
+            String textSelected = autocompleteItem.getText();
+            autocompleteItem.click();
+            report("Selected '" + textSelected + "' from auto complete");
+            if(!getDriver().getCurrentUrl().contains("meeting")){
+                WebElement e = mCurrentForm.findElement(By.name("destinationAddress.city"));
+                String value = e.getAttribute("value");
+                long currentTime = System.currentTimeMillis();
+                long waitTime = currentTime + 5000;
+                while (value.equalsIgnoreCase("")) {
+                    value = e.getAttribute("value");
+                    if (System.currentTimeMillis() > waitTime) {
+                        break;
+                    }
+                }
+            }
+        } catch (NoSuchElementException | TimeoutException e) {
+            report("Autocomplete list was never displayed");
+        }
+    }
+
+    /**
+     * <h2>Sets a sub location for a tests screenshots</h2> Helpful when tests
+     * are data driven and may overwrite previous screenshots by default
+     *
+     * @param subLocation sub location to store screenshots under the main test folder
+     */
+    protected void setScreenshotSublocation(String subLocation) {
+        File f = getFile();
+        f = new File(f, subLocation);
+        setFile(f);
+        boolean mkdirs = f.mkdirs();
+        if (mkdirs) {
+            try {
+                FileUtils.cleanDirectory(f);
+            } catch (IOException ignored) {
+            }
+        }
+        setScreenNum(0);
+        Reporter.getCurrentTestResult().setAttribute("screenshot-location", f.getAbsolutePath());
+    }
+
+    protected void switchToPopup(String currentWindowHandle) {
+        Set<String> allWindowHandles = getDriver().getWindowHandles();
+        for (String windowHandle : allWindowHandles) {
+            if (!windowHandle.equals(currentWindowHandle)) {
+                setDriver(getDriver().switchTo().window(windowHandle));
+                break;
+            }
+        }
+    }
+
+    public void waitForPageLoaded(WebDriver driver) {
+        ExpectedCondition<Boolean> condition = driver1 -> getDriver().executeScript("return document.readyState").equals("complete");
+        try {
+            WebDriverWait wait = new WebDriverWait(driver, 120);
+            wait.until(condition);
+        } catch (Exception error) {
+            takeScreenshot();
+        }
+    }
+
+    public void waitForSeconds(double waitSeconds) {
+        waitSeconds = waitSeconds * 1000;
+        Calendar currentTime = Calendar.getInstance();
+        long currentTimeMillis = currentTime.getTimeInMillis();
+        long secCounter = 0;
+        while (secCounter < waitSeconds) {
+            Calendar newTime = Calendar.getInstance();
+            secCounter = (newTime.getTimeInMillis()) - (currentTimeMillis);
+        }
+    }
+
+    protected void waitUntilElementToBeClickable(WebElement element) {
+        try {
+            new WebDriverWait(getDriver(), 15).until((ExpectedConditions.elementToBeClickable(element)));
+        } catch (Exception e) {
+            fail("Unable to find element with selector : " + element.toString() + " On page : " + getDriver().getCurrentUrl(), Execution.STOP);
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * <h2>Used for verifying a page is loaded completely. Method report failure/pass and continue;Caller is responsible for terminate or continue execution </h2>
+     *
+     * @param Locator     to be verified- usually the most frequently used element OR which is loaded last
+     * @param elementName the element name to be printed in report;( only on failure)-SGO-24 Sep
+     */
+    public boolean waitUntilVisibilityOf(By Locator, String elementName) {
+        try {
+            new WebDriverWait(MyThreadLocal.getDriver(), 30).until(ExpectedConditions.visibilityOfElementLocated(Locator));//getting warning on advance search page for US locale
+            return true;
+        } catch (Exception e) {
+            fail("Unable to find element: " + elementName + " on " + getDriver().getCurrentUrl(), Execution.CONTINUE);
+            try {
+                List<WebElement> errorElement = getDriver().findElements(By.cssSelector("t-error-message")); //Shows Server stubborn, error if present
+                if (errorElement.size() > 0) {
+                    fail("Error/Warning: " + errorElement.get(0).getText());
+                }
+            } catch (Exception error1) {
+                try {
+                    List<WebElement> errorElement = getDriver().findElements(By.cssSelector("[data-component-name=unexpectedErrorMessage]"));//Shows errors like 800 page, if present
+                    if (errorElement.size() > 0) {
+                        fail("Error/Warning: " + errorElement.get(0).getText());
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+            return false;
+        }
+    }
+
+}
